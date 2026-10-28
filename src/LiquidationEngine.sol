@@ -11,7 +11,8 @@ import {ValueMath} from "./libraries/ValueMath.sol";
 /// @dev Bonus is a WAD multiplier (1.05e18 means the liquidator may receive collateral worth 105% of
 ///      the repaid debt value). Seize value is rounded down and then checked:
 ///      `seizeValue * WAD <= repayValue * bonus`.
-///      This is a minimal G2 path. Target-HF partials, Dutch bonuses, and bad-debt socialization are later work.
+///      Dutch bonuses and bad-debt socialization are out of scope. `socializesBadDebt` is false.
+///      `badDebtAfterQuote` reports debt assets that remain after the largest seize this quote allows.
 ///      The engine does not move tokens and does not read oracles.
 contract LiquidationEngine {
     struct QuoteInput {
@@ -41,7 +42,19 @@ contract LiquidationEngine {
     error BonusExceeded();
     error BadBonus();
 
-    function quote(QuoteInput memory input) external pure returns (Quote memory q) {
+    /// @notice This engine never writes off residual debt.
+    function socializesBadDebt() external pure returns (bool) {
+        return false;
+    }
+
+    /// @notice Debt assets still owed after the largest successful quote.
+    /// @dev A non-zero result is bad debt left on the borrower. Callers must not treat it as forgiven.
+    function badDebtAfterQuote(QuoteInput memory input) public pure returns (uint256) {
+        Quote memory q = quote(input);
+        return input.debtAssets - q.repayAssets;
+    }
+
+    function quote(QuoteInput memory input) public pure returns (Quote memory q) {
         if (input.bonusWad < FixedPoint.WAD) revert BadBonus();
         if (input.debtAssets == 0 || input.repayRequested == 0) revert NothingToRepay();
 
@@ -89,7 +102,7 @@ contract LiquidationEngine {
         uint256 collateralPriceWadPerWhole,
         uint8 debtDecimals,
         uint8 collateralDecimals
-    ) external pure returns (uint256 seizeAssets, uint256 repayValueWad, uint256 seizeValueWad) {
+    ) public pure returns (uint256 seizeAssets, uint256 repayValueWad, uint256 seizeValueWad) {
         if (bonusWad < FixedPoint.WAD) revert BadBonus();
         if (repayAssets == 0) revert NothingToRepay();
         repayValueWad =

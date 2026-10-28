@@ -13,6 +13,7 @@ import {LiquidityHub} from "./LiquidityHub.sol";
 import {OracleAdapter} from "./OracleAdapter.sol";
 import {PositionManager} from "./PositionManager.sol";
 import {RiskEngine} from "./RiskEngine.sol";
+import {IEligibilityAdapter} from "./interfaces/IEligibilityAdapter.sol";
 import {IFHEAdapter} from "./interfaces/IFHEAdapter.sol";
 import {Caps} from "./libraries/Caps.sol";
 import {FixedPoint} from "./libraries/FixedPoint.sol";
@@ -68,6 +69,8 @@ contract Market is AccessControl, ReentrancyGuard {
         uint256 slope1Wad;
         uint256 slope2Wad;
         uint256 optimalUtilWad;
+        /// @dev Zero leaves supply and borrow open to every address. Factory markets may set a gate here.
+        IEligibilityAdapter eligibility;
     }
 
     LiquidityHub public immutable hub;
@@ -95,6 +98,8 @@ contract Market is AccessControl, ReentrancyGuard {
     Caps.Limits public caps;
     InterestRateModel.RateParams public rateParams;
     ReserveAccounting.Reserve public reserve;
+    /// @notice Optional supply/borrow gate. The zero address means the gate is off.
+    IEligibilityAdapter public eligibility;
 
     event Supplied(address indexed user, uint256 assets, uint256 shares);
     event Withdrawn(address indexed user, uint256 assets, uint256 shares);
@@ -115,6 +120,7 @@ contract Market is AccessControl, ReentrancyGuard {
     event CapsUpdated(uint256 supplyCap, uint256 borrowCap, uint256 walletSupplyCap, uint256 walletBorrowCap);
     event RateParamsUpdated(uint256 baseRateWad, uint256 slope1Wad, uint256 slope2Wad, uint256 optimalUtilWad);
     event FeeRecipientUpdated(address indexed feeRecipient);
+    event EligibilityUpdated(address indexed eligibility);
     /// @dev Emitted once at construction. `mode` is PrivacyMode.Public (0). Label is the public posture, not a ciphertext claim.
     event PrivacyModeDeclared(uint8 mode, string label);
 
@@ -140,7 +146,11 @@ contract Market is AccessControl, ReentrancyGuard {
     error BadReserveFactor();
     error BadDust();
     error FeeOnTransferNotSupported();
+    error NotEligible();
 
+    /// @dev Blocks borrow, collateral withdrawal, and liquidation while the risk pause is on.
+    ///      Repay does not use this modifier. Supply and borrow-asset withdrawal do not either.
+    ///      EmergencyController.repayPaused is always false. There is no repay pause bit.
     modifier whenRiskAllowed() {
         if (emergency.paused(address(this))) revert MarketPaused();
         _;
@@ -151,8 +161,8 @@ contract Market is AccessControl, ReentrancyGuard {
             cfg.governor == address(0) || cfg.curator == address(0) || cfg.feeRecipient == address(0)
                 || address(cfg.hub) == address(0) || cfg.collateralAsset == address(0) || cfg.borrowAsset == address(0)
                 || address(cfg.oracle) == address(0) || address(cfg.interestRateModel) == address(0)
-                || address(cfg.emergency) == address(0) || address(cfg.fhe) == address(0)
-                || address(cfg.risk) == address(0) || address(cfg.liquidationEngine) == address(0)
+                || address(cfg.emergency) == address(0) || address(cfg.fhe) == address(0) || address(cfg.risk) == address(0)
+                || address(cfg.liquidationEngine) == address(0)
         ) revert ZeroAddress();
         if (cfg.collateralAsset == cfg.borrowAsset) revert AssetsMustDiffer();
 
@@ -188,6 +198,8 @@ contract Market is AccessControl, ReentrancyGuard {
         if (block.timestamp > type(uint40).max) revert BadDust();
         reserve.lastAccrual = uint40(block.timestamp);
 
+        eligibility = cfg.eligibility;
+        emit EligibilityUpdated(address(cfg.eligibility));
         emit PrivacyModeDeclared(uint8(PrivacyMode.Public), "public");
     }
 
@@ -206,6 +218,7 @@ contract Market is AccessControl, ReentrancyGuard {
 
     function supply(uint256 assets) external nonReentrant accrued {
         if (assets < 1) revert ZeroAmount();
+        _requireEligible(msg.sender);
         uint256 shares = Math.mulDiv(assets, FixedPoint.RAY, reserve.supplyIndex, Math.Rounding.Floor);
         if (shares < 1) revert ZeroAmount();
         reserve.totalSupplyShares += shares;
@@ -272,6 +285,7 @@ contract Market is AccessControl, ReentrancyGuard {
     function borrow(uint256 assets) external nonReentrant whenRiskAllowed accrued {
         _requireFreshOracles();
         if (assets < 1) revert ZeroAmount();
+        _requireEligible(msg.sender);
         if (assets > _available()) revert InsufficientLiquidity();
 
         uint256 oldShares = positions.debtShares(msg.sender);
@@ -294,6 +308,7 @@ contract Market is AccessControl, ReentrancyGuard {
     }
 
     /// @notice Repay `onBehalf`'s debt. Allowed while the market is paused and without a fresh oracle.
+    /// @dev Pause flags do not cover this function. A guardian pause cannot reject a repayment.
     /// @dev Pass `type(uint256).max` to repay the full current debt. The payer is charged the debt reduction,
     ///      which can be 1 wei below the requested amount when share rounding cannot land on the request.
     function repay(address onBehalf, uint256 assets) external nonReentrant accrued {
@@ -441,6 +456,13 @@ contract Market is AccessControl, ReentrancyGuard {
         if (recipient == address(0)) revert ZeroAddress();
         feeRecipient = recipient;
         emit FeeRecipientUpdated(recipient);
+    }
+
+    /// @notice Install or clear the supply/borrow gate. The zero address clears it.
+    /// @dev On markets created by MarketFactory the admin is the curator timelock, so this call is delayed.
+    function setEligibility(IEligibilityAdapter adapter) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        eligibility = adapter;
+        emit EligibilityUpdated(address(adapter));
     }
 
     function borrowIndex() external view returns (uint256) {
@@ -597,6 +619,11 @@ contract Market is AccessControl, ReentrancyGuard {
         return accounted < cash ? accounted : cash;
     }
 
+    function _requireEligible(address user) internal view {
+        IEligibilityAdapter gate = eligibility;
+        if (address(gate) != address(0) && !gate.isEligible(address(this), user)) revert NotEligible();
+    }
+
     function _requireFreshOracles() internal view {
         (
             uint256 collateralPrice,
@@ -700,7 +727,9 @@ contract Market is AccessControl, ReentrancyGuard {
         emit RiskParamsUpdated(ltv, liquidationThreshold, bonus, closeFactor, reserveFactor, dust);
     }
 
-    function _setCaps(uint256 supplyCap, uint256 borrowCap, uint256 walletSupplyCap, uint256 walletBorrowCap) internal {
+    function _setCaps(uint256 supplyCap, uint256 borrowCap, uint256 walletSupplyCap, uint256 walletBorrowCap)
+        internal
+    {
         caps = Caps.Limits({
             supplyCap: supplyCap,
             borrowCap: borrowCap,
@@ -712,7 +741,10 @@ contract Market is AccessControl, ReentrancyGuard {
 
     function _setRates(uint256 baseRate, uint256 slope1, uint256 slope2, uint256 optimalUtil) internal {
         InterestRateModel.RateParams memory params = InterestRateModel.RateParams({
-            baseRateWad: baseRate, slope1Wad: slope1, slope2Wad: slope2, optimalUtilWad: optimalUtil
+            baseRateWad: baseRate,
+            slope1Wad: slope1,
+            slope2Wad: slope2,
+            optimalUtilWad: optimalUtil
         });
         interestRateModel.validate(params);
         rateParams = params;

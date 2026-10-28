@@ -1,6 +1,6 @@
-# FHERUM G2
+# FHERUM
 
-Core lending contracts for a curated money market on Robinhood Chain. This repository is the G2 plaintext skeleton: public positions, an FHE adapter boundary, and storage reserved for a later confidential migration.
+Core lending contracts for a curated money market on Robinhood Chain. G2 is the plaintext skeleton. G4 adds a timelocked curator, an on-chain lens, an optional entry gate, and a fixed pause taxonomy.
 
 Brief ID: ORC-20261028-01. Active branch: `feat/ORC-20261028-01`. Owner decision on 2026-10-28: stay on Robinhood Chain, ship public accounting now, and do not integrate a live FHE stack until a vendor supports this chain.
 
@@ -35,9 +35,14 @@ Nothing here broadcasts a deployment. `script/DeployRobinhoodTestnet.s.sol` only
 | `RiskEngine` | LTV, liquidation threshold, Health Factor via the adapter |
 | `PositionManager` | One position per user; reserved handle slots |
 | `PlaintextFHEAdapter` | Public integer implementation of `IFHEAdapter` |
-| `EmergencyController` | Guardian pause. Repay stays open |
-| `LiquidationEngine` | Bonus-capped seize on underwater public positions |
+| `EmergencyController` | Guardian pause. Repay stays open. Supply and borrow-asset withdrawal stay open |
+| `LiquidationEngine` | Bonus-capped seize. Does not socialize bad debt |
 | `Caps` | Total and per-wallet supply and borrow caps |
+| `ForgeAdmin` | Deploys the OpenZeppelin timelock and `CuratorRegistry`, then renounces admin |
+| `CuratorRegistry` | Queues, executes, and cancels market parameter updates |
+| `MarketFactory` | Creates a spoke whose governor and curator are the timelock, and registers it on the hub |
+| `LensReader` | View helpers for totals, utilization, rates, caps, pause, and `privacyMode` |
+| `AllowlistEligibility` | Optional address-set and Merkle gate for supply and borrow. Off unless set |
 
 Hub buckets are per market in G2. One market cannot draw another market's cash. Cross-spoke shared liquidity needs an interest-allocation design that is not in this release.
 
@@ -65,11 +70,11 @@ Invariants, rounding, and known gaps are in `docs/INVARIANTS.md`. The public/tar
 
 ## Roles
 
-- Governor (`DEFAULT_ADMIN_ROLE`): allowlist, credit lines, spoke registration, oracle feeds, fee recipient, unpause. Must be a Safe before any mainnet use. G2 does not deploy mainnet.
-- Curator: risk parameters, caps, and rate parameters, inside hard bounds (LTV at or below liquidation threshold, liquidation threshold at most 95%, bonus at most 15%, reserve factor at most 50%).
-- Guardian: pause only. Pause blocks borrow, collateral withdrawal, and liquidation. Repay, supply, and borrow-asset withdrawal stay available. The guardian cannot move tokens.
+- Governor (`DEFAULT_ADMIN_ROLE` on hub, oracle, and emergency): allowlist, credit lines, spoke registration, oracle feeds, unpause. On markets created by `MarketFactory`, this role is the timelock, not the safe. The safe admins the timelock and the factory. It must be a Safe before any mainnet use. This repository does not deploy mainnet.
+- Curator: queues risk parameters, caps, and rate parameters on factory markets. The timelock executes them after the delay, inside the same hard bounds (LTV at or below liquidation threshold, liquidation threshold at most 95%, bonus at most 15%, reserve factor at most 50%). A market constructed with an EOA curator can still change those parameters immediately. That path remains for tests. Production spokes should come from the factory.
+- Guardian: pause only. Pause blocks borrow, collateral withdrawal, and liquidation. Repay, supply, and borrow-asset withdrawal stay available. The guardian cannot unpause, cancel a timelock, edit an allowlist, or move tokens.
 
-There is no timelock in G2. That is a G4 gap.
+`ForgeAdmin` requires a non-zero minimum delay. Queue, execute, and cancel are events on `CuratorRegistry`, alongside the timelock's `CallScheduled`, `CallExecuted`, and `Cancelled`. Details and the indexer event list are in `G4-REPORT.md` and `docs/INDEXER-EVENTS.md`.
 
 ## Develop
 

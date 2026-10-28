@@ -6,9 +6,10 @@ import {Test} from "forge-std/Test.sol";
 /// @notice Guards copy in source and the README. Plaintext must not be described as live FHE.
 contract HonestyTest is Test {
     function test_sourcesDoNotClaimLiveConfidentiality() public view {
-        string[12] memory files = [
+        string[18] memory files = [
             "src/PlaintextFHEAdapter.sol",
             "src/interfaces/IFHEAdapter.sol",
+            "src/interfaces/IEligibilityAdapter.sol",
             "src/Market.sol",
             "src/PositionManager.sol",
             "src/RiskEngine.sol",
@@ -18,6 +19,11 @@ contract HonestyTest is Test {
             "src/InterestRateModel.sol",
             "src/EmergencyController.sol",
             "src/types/PrivacyMode.sol",
+            "src/CuratorRegistry.sol",
+            "src/MarketFactory.sol",
+            "src/ForgeAdmin.sol",
+            "src/LensReader.sol",
+            "src/AllowlistEligibility.sol",
             "README.md"
         ];
         for (uint256 i = 0; i < files.length; i++) {

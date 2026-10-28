@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { DEPLOYMENTS, type NetworkKey } from "@/lib/deployments";
+import { NetDropdown, type NetItem } from "@/components/net-dropdown";
 
 const KEY = "fherum.network";
 const Ctx = createContext<{ net: NetworkKey; setNet: (n: NetworkKey) => void }>({ net: "testnet", setNet: () => {} });
@@ -18,23 +19,14 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
 
 export const useNetwork = () => useContext(Ctx);
 
-/** Compact testnet/mainnet toggle. Mainnet is selectable to inspect; it shows "not deployed" everywhere. */
+/** Testnet/mainnet dropdown. Mainnet is selectable to inspect; it shows "not deployed" everywhere. */
 export function NetToggle({ className = "" }: { className?: string }) {
   const { net, setNet } = useNetwork();
-  return (
-    <div role="radiogroup" aria-label="Network" className={`inline-flex border border-[#e9e4d8]/40 font-mono text-[11px] uppercase ${className}`}>
-      {(["testnet", "mainnet"] as const).map((k) => {
-        const d = DEPLOYMENTS[k], on = k === net, live = d.contracts.length > 0;
-        return (
-          <button key={k} role="radio" aria-checked={on} onClick={() => setNet(k)}
-            title={`${d.label} · ${d.chainId}${live ? "" : " · not deployed"}`}
-            className={`h-9 px-3 inline-flex items-center gap-1.5 ${on ? "bg-[#e9e4d8] text-black" : "text-[#e9e4d8]/70 hover:text-[#e9e4d8]"}`}>
-            <span aria-hidden className={`text-[8px] ${live ? "text-[#3fb950]" : "opacity-50"}`}>{live ? "●" : "○"}</span>{k}
-          </button>
-        );
-      })}
-    </div>
-  );
+  const items: NetItem[] = (["testnet", "mainnet"] as const).map((k) => {
+    const d = DEPLOYMENTS[k], live = d.contracts.length > 0;
+    return { key: k, label: k, chainId: d.chainId, dot: live ? "ok" : "off", note: live ? undefined : "not deployed", hint: d.label };
+  });
+  return <NetDropdown items={items} value={net} onSelect={(k) => setNet(k as NetworkKey)} className={`text-[#e9e4d8] ${className}`} />;
 }
 
 /** One-line hero status that follows the selected network. */

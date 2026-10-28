@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
-import { NetworkSwitch, WalletButton, WalletProvider, useWallet } from "@/components/wallet";
+import { NetworkSwitch, WalletButton, WalletProvider } from "@/components/wallet";
 import { isDeployed } from "@/lib/protocol";
 
 const NAV = [

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { CHAINS, TARGET_CHAIN } from "@/lib/protocol";
+import { NetDropdown, type NetItem } from "@/components/net-dropdown";
 
 type Eip1193 = {
   request: (a: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -116,25 +117,16 @@ const NETWORKS = [
 export function NetworkSwitch() {
   const { w, switchChain } = useWallet();
   const walletChain = w.status === "connected" ? w.chainId : null;
-  return (
-    <div role="group" aria-label="Network" className="h-9 inline-flex border border-line-2 font-mono text-[11px] uppercase">
-      {NETWORKS.map((n, i) => {
-        const selected = n.chain.id === TARGET_CHAIN.id;
-        const onWallet = walletChain === n.chain.id;
-        const needsSwitch = selected && walletChain !== null && !onWallet;
-        return (
-          <button key={n.key} type="button" disabled={!n.live}
-            aria-pressed={selected}
-            title={n.live ? (needsSwitch ? `Switch wallet to ${n.chain.name}` : `${n.chain.name} · ${n.chain.id}`) : `${n.chain.name} · not deployed yet`}
-            onClick={() => { if (n.live && walletChain !== null && !onWallet) switchChain(n.chain.id); }}
-            className={`px-3 inline-flex items-center gap-2 ${i ? "border-l border-line-2" : ""} ${
-              selected ? "bg-ink text-bg" : "text-ink-2"} disabled:cursor-not-allowed disabled:opacity-50 ${n.live && !selected ? "hover:text-bronze" : ""}`}>
-            <span aria-hidden className={`text-[8px] ${!n.live ? "text-mute" : needsSwitch ? "text-warn" : "text-ok"}`}>{n.live ? (needsSwitch ? "▲" : "●") : "○"}</span>
-            {n.label}<span className="opacity-60">{n.chain.id}</span>
-            {!n.live && <span className="opacity-60">· soon</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
+  const items: NetItem[] = NETWORKS.map((n) => {
+    const needsSwitch = n.chain.id === TARGET_CHAIN.id && walletChain !== null && walletChain !== n.chain.id;
+    return {
+      key: n.key, label: n.label, chainId: n.chain.id, disabled: !n.live,
+      dot: !n.live ? "off" : needsSwitch ? "warn" : "ok",
+      note: !n.live ? "soon" : needsSwitch ? "switch wallet" : undefined,
+      hint: n.live ? `${n.chain.name} · ${n.chain.id}` : `${n.chain.name} · not deployed yet`,
+    };
+  });
+  const sel = NETWORKS.find((n) => n.chain.id === TARGET_CHAIN.id)?.key ?? NETWORKS[0].key;
+  return <NetDropdown items={items} value={sel} className="text-ink"
+    onSelect={(k) => { const n = NETWORKS.find((x) => x.key === k); if (n?.live && walletChain !== null && walletChain !== n.chain.id) switchChain(n.chain.id); }} />;
 }

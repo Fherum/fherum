@@ -122,3 +122,5 @@ html { scroll-behavior: smooth; }
 .heatbar{background:linear-gradient(90deg,#ff5a1f,#ffd08a,#ff5a1f,#2a0b06,#ff5a1f);background-size:200% 100%;animation:heatline 4s linear infinite}
 @media (prefers-reduced-motion: reduce){.heatbar{animation:none}}
 html[data-reduce-motion="true"] .heatbar{animation:none}
+
+html[data-intro="seen"] #intro-loader{display:none}

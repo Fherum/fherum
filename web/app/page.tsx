@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { Mark } from "@/components/brand";
-import { ForgeShader } from "@/components/fx/forge-shader";
 import { GlyphField } from "@/components/fx/glyph-field";
 import { StackedCards } from "@/components/fx/stacked-cards";
 import { IronTags } from "@/components/fx/iron-tags";
 import { SlideLine } from "@/components/fx/big-type";
-import { Hero3D } from "@/components/fx/hero3d";
+import { FoundryPour } from "@/components/fx/foundry-pour";
 import { VeilDemo } from "@/components/fx/veil-demo";
 import { HealthFactorLab } from "@/components/hf-lab";
 import { Marquee } from "@/components/fx/marquee";
 import { ContractList } from "@/components/contract-list";
 import { NetToggle, NetStatus, NetworkProvider } from "@/components/network-context";
-import { FIELDS, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
+import { FIELDS, isDeployed } from "@/lib/protocol";
 
 const INK = "#120c08", PAPER = "#e9e4d8", MOLTEN = "#ff5a1f";
 
@@ -32,32 +31,30 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* HERO — molten field + framed slab */}
-      <section className="relative h-dvh min-h-[720px]">
-        <div className="absolute inset-0"><ForgeShader /></div>
-        {/* damp the molten field to embers: dark everywhere, glow only behind the coin */}
-        <div aria-hidden className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_45%_55%_at_74%_52%,rgba(5,4,4,0.35),rgba(5,4,4,0.86)_60%,rgba(5,4,4,0.95))]" />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 pointer-events-none bg-gradient-to-t from-[#050404] to-transparent" />
-        <div className="relative z-10 h-full grid grid-rows-[1fr_auto] pt-24 px-5 md:px-8 pb-6 pointer-events-none">
-          <div className="grid lg:grid-cols-[1.2fr_1fr] items-center gap-6">
-            <div className="relative max-w-[860px] pointer-events-auto">
-              <span className="inline-flex items-center gap-2 mb-6 font-mono text-[11px] uppercase text-[#ff5a1f]"><span className="pulse-dot" aria-hidden />Now forging · {TARGET_CHAIN.name}</span>
-              <h1 className="font-stencil uppercase leading-[0.82] text-[18vw] lg:text-[148px] tracking-[-0.01em]">
-                Encrypted<br /><span className="text-[#ff5a1f]">money</span><br />markets
-              </h1>
-              <div className="mt-8 grid md:grid-cols-[1fr_auto] gap-6 items-end">
-                <p className="max-w-md text-[15px] leading-relaxed text-[#e9e4d8]/80">
-                  FHE-powered confidential lending architecture for Robinhood Chain. <strong className="text-[#e9e4d8] font-medium">Private borrower positions. Public market accountability.</strong>
-                </p>
-                <div className="flex gap-2">
-                  <Link href="/app" className="bg-[#ff5a1f] text-black font-mono text-xs uppercase h-12 px-5 inline-flex items-center hover:bg-[#e9e4d8] shadow-[5px_5px_0_#e9e4d8]">{live ? "Launch app" : "Preview app"} →</Link>
-                  <a href="#problem" className="border-2 border-[#e9e4d8] font-mono text-xs uppercase h-12 px-5 inline-flex items-center hover:bg-[#e9e4d8] hover:text-black">Why</a>
-                </div>
+      {/* HERO — foundry poster: stencil watermark, serif headline, halftone pour panels */}
+      <section className="relative h-dvh min-h-[720px] overflow-hidden bg-bg pt-16">
+        <div className="absolute top-16 bottom-0 left-0 w-[14%] hidden md:block border-r border-line"><FoundryPour side="l" /></div>
+        <div className="absolute top-16 bottom-0 right-0 w-[14%] hidden md:block border-l border-line"><FoundryPour side="r" /></div>
+        <div aria-hidden className="absolute top-16 bottom-0 inset-x-0 md:inset-x-[14%] grid place-items-center overflow-hidden bg-s1">
+          <span className="font-stencil leading-none text-s3 text-[22vw] tracking-[-0.02em] select-none">FHERUM</span>
+        </div>
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-b from-transparent to-bg" />
+        <div className="relative h-full md:mx-[14%] px-5 md:px-10 flex flex-col">
+          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">Encrypted money markets · Robinhood Chain</span></div>
+          <h1 className="mt-auto font-stencil uppercase text-ink leading-[0.86] tracking-[-0.005em] text-[clamp(44px,6.4vw,112px)]">
+            <span className="block"><span className="text-bronze">Private</span> borrower positions.</span>
+            <span className="block md:text-right text-ink/40"><span className="text-bronze">Public</span> market accountability.</span>
+          </h1>
+          <div className="relative mt-10 mb-8 grid gap-6">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-powered confidential lending architecture for Robinhood Chain. Collateral, debt and health factor stay ciphertext — every market stays auditable.</p>
+              <div className="flex gap-3">
+                <Link href="/app" className="h-12 px-5 inline-flex items-center bg-bronze text-black font-mono text-xs uppercase hover:brightness-110">{live ? "Launch app" : "Preview app"} →</Link>
+                <a href="#problem" className="h-12 px-5 inline-flex items-center border border-line-2 text-ink font-mono text-xs uppercase hover:border-bronze hover:text-bronze">Why</a>
               </div>
             </div>
-            <div className="relative h-[420px] lg:h-[680px] pointer-events-auto hidden md:block"><Hero3D /></div>
+            <NetStatus />
           </div>
-          <NetStatus />
         </div>
       </section>
 

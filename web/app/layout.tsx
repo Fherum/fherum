@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Instrument_Serif, Big_Shoulders } from "next/font/google";
 import "./globals.css";
+import { IntroLoader } from "@/components/intro-loader";
 
 const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono" });
@@ -17,8 +18,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable} ${stencil.variable}`}>
-      <body className="min-h-dvh">{children}</body>
+    <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} ${display.variable} ${stencil.variable}`}>
+      <head>
+        {/* mark repeat visits (this session) before paint so the intro never flashes */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("fherum.intro"))document.documentElement.dataset.intro="seen"}catch(e){}` }} />
+      </head>
+      <body className="min-h-dvh">
+        <IntroLoader />
+        {children}
+      </body>
     </html>
   );
 }

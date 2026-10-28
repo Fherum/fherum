@@ -1,0 +1,6 @@
+{
+  "filter_paths": "lib|test|script",
+  "exclude_informational": true,
+  "exclude_low": true,
+  "detectors_to_exclude": "naming-convention,solc-version,assembly,timestamp,cyclomatic-complexity,similar-names,too-many-digits"
+}

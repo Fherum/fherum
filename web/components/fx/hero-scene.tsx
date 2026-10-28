@@ -1,8 +1,8 @@
 "use client";
 
-import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Float, Lightformer, OrbitControls, useTexture } from "@react-three/drei";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 /** Canvas-drawn label texture — no remote fonts, works offline. */
@@ -115,6 +115,19 @@ function Dust({ count = 900 }) {
   );
 }
 
+/** Pull the camera back on narrow canvases so the orbit rings never hit the canvas edge. */
+function FitCamera({ radius = 3.3, baseZ = 6.2 }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const half = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    const aspect = size.width / Math.max(size.height, 1);
+    cam.position.setLength(Math.max(baseZ, radius / (half * Math.min(aspect, 1))));
+    cam.updateProjectionMatrix();
+  }, [camera, size, radius, baseZ]);
+  return null;
+}
+
 export default function HeroScene({ reduced, onFlip, onPick, picked }: {
   reduced: boolean; onFlip: () => void; onPick: (i: number) => void; picked: number | null;
 }) {
@@ -135,6 +148,7 @@ export default function HeroScene({ reduced, onFlip, onPick, picked }: {
       </Float>
       {TOKENS.map((_, i) => <Token key={i} i={i} n={TOKENS.length} onPick={onPick} active={picked === i} />)}
       <Dust />
+      <FitCamera />
       <OrbitControls enableZoom={false} enablePan={false} autoRotate={!reduced} autoRotateSpeed={0.5}
         minPolarAngle={Math.PI / 3} maxPolarAngle={(Math.PI * 2) / 3} />
     </Canvas>

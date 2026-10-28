@@ -50,13 +50,13 @@ function Body({ id, m, error, loading }: { id: string; m?: MarketView; error?: s
     ["Liquidity", m ? amt(m.snap.availableLiquidity, m.loan.decimals, 0) : null],
   ];
   return (
-    <div className="grid 2xl:grid-cols-[1fr_380px] gap-6 items-start">
+    <div className="grid xl:grid-cols-[1fr_360px] gap-6 items-start">
       <div className="grid gap-6 min-w-0">
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 border-2 border-ink">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-4 border border-line bg-s1">
           {kpis.map(([k, v], i) => (
-            <div key={k} className={`p-5 ${i ? "border-t-2 sm:border-t-0 sm:border-l-2" : ""} border-ink`}>
+            <div key={k} className={`p-5 ${i ? "border-t sm:border-t-0 sm:border-l" : ""} border-line`}>
               <p className="font-mono text-[10px] uppercase text-mute">{k}{k === "Liquidity" && m ? ` · ${m.loan.symbol}` : ""}</p>
-              <p className={`font-stencil text-6xl leading-none mt-2 ${v ? "text-ink" : "text-ink-2"}`}>{v ?? "—"}</p>
+              <p className={`num text-3xl font-medium leading-none mt-2 ${v ? "text-ink" : "text-ink-2"}`}>{v ?? "—"}</p>
               <p className="font-mono text-[10px] uppercase text-mute mt-2">{note}</p>
             </div>
           ))}
@@ -115,7 +115,7 @@ function Body({ id, m, error, loading }: { id: string; m?: MarketView; error?: s
         <div className="grid lg:grid-cols-2 gap-6">
           <Panel title="Privacy · Veilbook">
             <div className="p-5 grid gap-3 text-sm">
-              <p className="font-stencil text-4xl uppercase leading-none">{m ? (m.snap.privacyMode === 0 ? "Public" : `Mode ${m.snap.privacyMode}`) : PRIVACY_MODE}</p>
+              <p className="text-xl font-medium leading-none">{m ? (m.snap.privacyMode === 0 ? "Public" : `Mode ${m.snap.privacyMode}`) : PRIVACY_MODE}</p>
               <p className="text-ink-2 leading-relaxed">{FHE_STATUS}</p>
               <p className="text-xs text-mute">Market aggregates (totals, utilization, rates) stay public in every mode. Only borrower positions are encrypted once FHE is available.</p>
             </div>

@@ -9,40 +9,39 @@ import { Hero3D } from "@/components/fx/hero3d";
 import { VeilDemo } from "@/components/fx/veil-demo";
 import { HealthFactorLab } from "@/components/hf-lab";
 import { Marquee } from "@/components/fx/marquee";
+import { ContractList } from "@/components/contract-list";
+import { NetToggle, NetStatus, NetworkProvider } from "@/components/network-context";
 import { FIELDS, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
 
 const INK = "#120c08", PAPER = "#e9e4d8", MOLTEN = "#ff5a1f";
 
-const LIMITS = [
-  ["Not anonymity", "Wallet address, timing and ERC-20 transfer amounts stay visible on Robinhood Chain."],
-  ["Not live", "No FHE provider serves chain 4663 or 46630 yet. Until one does, positions are public."],
-  ["Not MEV-proof", "No such claim without a defined threat model and evidence."],
-  ["Not Aave", "Hub & spoke is inspired by Aave V4. No Aave contracts, no Aave liquidity."],
-  ["Not audited", "Contracts are unaudited and not deployed. Do not send funds."],
-];
 
 export default function Landing() {
   const live = isDeployed();
   return (
+    <NetworkProvider>
     <div className="bg-[#050404] text-[#e9e4d8] overflow-x-clip">
       {/* NAV — Aztec-style hard bar */}
-      <header className="fixed top-0 inset-x-0 z-50 mix-blend-difference text-white">
+      <header className="fixed top-0 inset-x-0 z-50 text-[#e9e4d8] bg-[#050404]/70 backdrop-blur-md border-b border-[#e9e4d8]/10">
         <div className="flex items-center justify-between px-5 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5"><Mark size={26} /><span className="font-stencil text-xl tracking-[0.12em]">FHERUM</span></Link>
-          <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase">
-            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#stack">Stack</a><a href="#limits">Limits</a>
+          <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
+            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
           </nav>
-          <Link href="/app" className="font-mono text-[12px] uppercase border border-white px-4 h-9 inline-flex items-center hover:bg-white hover:text-black">{live ? "Launch app" : "Preview app"} →</Link>
+          <div className="flex items-center gap-3"><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
         </div>
       </header>
 
       {/* HERO — molten field + framed slab */}
       <section className="relative h-dvh min-h-[720px]">
         <div className="absolute inset-0"><ForgeShader /></div>
+        {/* damp the molten field to embers: dark everywhere, glow only behind the coin */}
+        <div aria-hidden className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_45%_55%_at_74%_52%,rgba(5,4,4,0.35),rgba(5,4,4,0.86)_60%,rgba(5,4,4,0.95))]" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 pointer-events-none bg-gradient-to-t from-[#050404] to-transparent" />
         <div className="relative z-10 h-full grid grid-rows-[1fr_auto] pt-24 px-5 md:px-8 pb-6 pointer-events-none">
           <div className="grid lg:grid-cols-[1.2fr_1fr] items-center gap-6">
-            <div className="relative bg-[#050404]/88 border-2 border-[#e9e4d8] p-6 md:p-10 max-w-[860px] pointer-events-auto">
-              <span className="absolute -top-3 left-6 bg-[#ff5a1f] text-black font-mono text-[11px] uppercase px-2 py-0.5">Now forging · {TARGET_CHAIN.name}</span>
+            <div className="relative max-w-[860px] pointer-events-auto">
+              <span className="inline-flex items-center gap-2 mb-6 font-mono text-[11px] uppercase text-[#ff5a1f]"><span className="pulse-dot" aria-hidden />Now forging · {TARGET_CHAIN.name}</span>
               <h1 className="font-stencil uppercase leading-[0.82] text-[18vw] lg:text-[148px] tracking-[-0.01em]">
                 Encrypted<br /><span className="text-[#ff5a1f]">money</span><br />markets
               </h1>
@@ -56,15 +55,9 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            <div className="relative h-[420px] lg:h-[700px] lg:scale-105 pointer-events-auto hidden md:block"><Hero3D /></div>
+            <div className="relative h-[420px] lg:h-[680px] pointer-events-auto hidden md:block"><Hero3D /></div>
           </div>
-          <dl className="grid grid-cols-2 md:grid-cols-4 border-2 border-[#e9e4d8] bg-[#050404]/88 font-mono text-[11px] uppercase pointer-events-auto">
-            {[["Chain", `${TARGET_CHAIN.id} · testnet`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", "Public · FHE pending"], ["Audit", "None yet"]].map(([k, v], i) => (
-              <div key={k} className={`p-3 ${i ? "border-l-2 border-[#e9e4d8]" : ""} max-md:[&:nth-child(3)]:border-l-0 max-md:[&:nth-child(n+3)]:border-t-2`}>
-                <dt className="text-[#e9e4d8]/50">{k}</dt><dd className="mt-1">{v}</dd>
-              </div>
-            ))}
-          </dl>
+          <NetStatus />
         </div>
       </section>
 
@@ -135,18 +128,13 @@ export default function Landing() {
         <IronTags />
       </section>
 
-      {/* LIMITS — black, giant numbered list */}
-      <section id="limits" className="bg-[#050404] px-5 md:px-8 py-28">
-        <p className="font-mono text-xs uppercase text-[#ff5a1f]">§05 — What we do not promise</p>
-        <ol className="mt-10 border-t-2 border-[#e9e4d8]">
-          {LIMITS.map(([h, b], i) => (
-            <li key={h} className="group grid md:grid-cols-[120px_1fr_1fr] gap-4 items-baseline py-6 border-b-2 border-[#e9e4d8]/20 hover:bg-[#ff5a1f] hover:text-black transition-colors px-2 -mx-2">
-              <span className="font-mono text-xs">0{i + 1}</span>
-              <span className="font-stencil uppercase text-5xl md:text-7xl leading-none">{h}</span>
-              <span className="text-sm leading-relaxed text-[#e9e4d8]/70 group-hover:text-black">{b}</span>
-            </li>
-          ))}
-        </ol>
+      
+
+      <section id="contracts" className="bg-[#0b0806] text-[#e9e4d8] px-5 md:px-8 py-28 border-t-2 border-[#e9e4d8]/20">
+        <p className="font-mono text-xs uppercase text-[#ff5a1f]">§06 — Contracts</p>
+        <h2 className="mt-4 font-stencil uppercase text-6xl md:text-8xl leading-[0.85]">Verify, don&apos;t trust.</h2>
+        <p className="mt-4 max-w-2xl text-sm text-[#e9e4d8]/70 leading-relaxed">Every contract this app talks to, per network. Switch networks and the list follows; each address links straight to the block explorer.</p>
+        <div className="mt-10"><ContractList /></div>
       </section>
 
       <footer className="bg-[#ff5a1f] text-black">
@@ -157,5 +145,6 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+    </NetworkProvider>
   );
 }

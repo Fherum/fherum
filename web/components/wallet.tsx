@@ -18,7 +18,7 @@ export type WalletState =
   | { status: "connected"; address: string; chainId: number }
   | { status: "error"; message: string };
 
-const Ctx = createContext<{ w: WalletState; connect: () => void; switchChain: (id?: number) => void; disconnect: () => void } | null>(null);
+const Ctx = createContext<{ w: WalletState; connect: () => void; switchChain: (id?: number) => void; disconnect: () => void; switchErr: string | null } | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [w, setW] = useState<WalletState>({ status: "disconnected" });
@@ -51,25 +51,32 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     catch (e) { setW({ status: "error", message: (e as { code?: number }).code === 4001 ? "You rejected the request." : "Wallet request failed." }); }
   }, [read]);
 
+  const [switchErr, setSwitchErr] = useState<string | null>(null);
   const switchChain = useCallback(async (id: number = TARGET_CHAIN.id) => {
     const eth = window.ethereum; if (!eth) return;
     const chain = Object.values(CHAINS).find((c) => c.id === id) ?? TARGET_CHAIN;
     const hex = `0x${chain.id.toString(16)}`;
+    setSwitchErr(null);
     try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] }); }
     catch (e) {
-      if ((e as { code?: number }).code === 4902) {
-        // Public RPC only — a keyed provider URL must never be handed to the wallet.
+      const code = (e as { code?: number }).code;
+      if (code === 4001) return setSwitchErr("You rejected the network switch.");
+      // 4902 = unknown chain (MetaMask); other wallets wrap it (-32603 etc.) → try adding it.
+      // Public RPC only — a keyed provider URL must never be handed to the wallet.
+      try {
         await eth.request({ method: "wallet_addEthereumChain", params: [{
           chainId: hex, chainName: chain.name, rpcUrls: [chain.rpc],
           nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-        }] }).catch(() => {});
+        }] });
+      } catch (e2) {
+        setSwitchErr((e2 as { code?: number }).code === 4001 ? "You rejected adding the network." : `Couldn't switch. Add ${chain.name} (chain ${chain.id}, RPC ${chain.rpc}) in your wallet manually.`);
       }
     }
   }, []);
 
   const disconnect = useCallback(() => setW({ status: "disconnected" }), []);
 
-  return <Ctx.Provider value={{ w, connect, switchChain, disconnect }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ w, connect, switchChain, disconnect, switchErr }}>{children}</Ctx.Provider>;
 }
 
 export function useWallet() {
@@ -85,13 +92,16 @@ export function chainName(id: number) {
 }
 
 export function WalletButton() {
-  const { w, connect, switchChain } = useWallet();
+  const { w, connect, switchChain, switchErr } = useWallet();
   if (w.status === "connected") {
     const wrong = w.chainId !== TARGET_CHAIN.id;
     return wrong ? (
-      <button onClick={() => switchChain()} className="h-9 px-3 border border-warn/60 text-warn text-sm font-mono inline-flex items-center gap-2">
-        <span aria-hidden className="text-[8px]">▲</span>Wrong network — switch
-      </button>
+      <span className="relative inline-flex">
+        <button onClick={() => switchChain()} title={`Wallet is on ${chainName(w.chainId)}`} className="h-9 px-3 border border-warn/60 text-warn text-sm font-mono inline-flex items-center gap-2 hover:bg-warn/10">
+          <span aria-hidden className="text-[8px]">▲</span>Switch to {TARGET_CHAIN.name}
+        </button>
+        {switchErr && <span role="alert" className="absolute right-0 top-full mt-2 w-72 border border-bad/50 bg-s1 p-2 text-xs text-bad leading-snug">{switchErr}</span>}
+      </span>
     ) : (
       <span className="h-9 px-3 border border-line-2 text-sm font-mono inline-flex items-center gap-2 text-ink">
         <span aria-hidden className="text-ok text-[8px]">●</span>{short(w.address)}

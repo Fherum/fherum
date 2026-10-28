@@ -35,16 +35,16 @@ export function RateCurve() {
         <rect x={x(u) - 4} y={y(rb) - 4} width="8" height="8" transform={`rotate(45 ${x(u)} ${y(rb)})`} fill="var(--ink)" />
         <text x={x(u) + 10} y={y(rb) - 8} fill="var(--ink)" fontSize="11" fontFamily="var(--font-plex-mono)">{fmtPct(rb)}</text>
       </svg>
-      <div className="grid sm:grid-cols-4 gap-4 text-xs">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-xs">
         {([
           ["Utilization", u, setU, 0, 1, 0.01],
           ["Optimal U", uOpt, setUOpt, 0.5, 0.95, 0.01],
           ["Slope 1", s1, setS1, 0, 0.2, 0.005],
           ["Slope 2", s2, setS2, 0, 2, 0.05],
         ] as const).map(([l, v, set, mn, mx, st]) => (
-          <label key={l} className="grid gap-1.5">
+          <label key={l} className="grid gap-1.5 min-w-0">
             <span className="flex justify-between text-mute"><span>{l}</span><span className="num font-mono text-ink">{fmtPct(v, l.startsWith("Slope") ? 1 : 0)}</span></span>
-            <input type="range" min={mn} max={mx} step={st} value={v} onChange={(e) => set(Number(e.target.value))} />
+            <input type="range" min={mn} max={mx} step={st} value={v} onChange={(e) => set(Number(e.target.value))} className="w-full min-w-0" />
           </label>
         ))}
       </div>

@@ -27,7 +27,7 @@ export default function Markets() {
         <div className="grid gap-4 min-w-0">
           <Panel title="All markets" aside={<span className="font-mono text-[11px] text-mute">{live ? MARKETS.length : 0} markets · {TARGET_CHAIN.name}</span>}>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] text-sm">
+              <table className="mkt-table w-full min-w-[720px] text-sm">
                 <thead className="border-b border-line">
                   <tr>{COLS.map((c, i) => <Th key={c} right={i > 0 && i < 6}>{c}</Th>)}</tr>
                 </thead>

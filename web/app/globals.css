@@ -124,3 +124,8 @@ html { scroll-behavior: smooth; }
 html[data-reduce-motion="true"] .heatbar{animation:none}
 
 html[data-intro="seen"] #intro-loader{display:none}
+/* app layout: grid/flex children may shrink below content width (wide tables scroll inside their card instead of pushing the page) */
+main .grid > *, main .flex > * { min-width: 0; }
+main input[type="range"] { max-width: 100%; }
+/* markets table: oracle/curator move to the market page on narrower screens */
+@media (max-width:1279px){.mkt-table :is(th,td):nth-child(7),.mkt-table :is(th,td):nth-child(8){display:none}}

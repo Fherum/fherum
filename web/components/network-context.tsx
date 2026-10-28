@@ -1,23 +1,34 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { DEPLOYMENTS, type NetworkKey } from "@/lib/deployments";
+import { NET_COOKIE, netInfo, parseNet } from "@/lib/net";
 import { NetDropdown, type NetItem } from "@/components/net-dropdown";
 
-const KEY = "fherum.network";
 const Ctx = createContext<{ net: NetworkKey; setNet: (n: NetworkKey) => void }>({ net: "testnet", setNet: () => {} });
+const readCookie = () => document.cookie.split("; ").find((c) => c.startsWith(NET_COOKIE + "="))?.split("=")[1];
 
-export function NetworkProvider({ children }: { children: ReactNode }) {
-  const [net, setNetState] = useState<NetworkKey>("testnet");
+/** `initial` comes from the server cookie (app layout) so the first paint already matches. */
+export function NetworkProvider({ children, initial }: { children: ReactNode; initial?: NetworkKey }) {
+  const router = useRouter();
+  const [net, setNetState] = useState<NetworkKey>(initial ?? "testnet");
   useEffect(() => {
-    const v = localStorage.getItem(KEY);
-    if (v === "testnet" || v === "mainnet") queueMicrotask(() => setNetState(v));
-  }, []);
-  const setNet = (n: NetworkKey) => { setNetState(n); localStorage.setItem(KEY, n); };
+    if (initial) return;
+    const v = readCookie();
+    if (v) queueMicrotask(() => setNetState(parseNet(v)));
+  }, [initial]);
+  const setNet = (n: NetworkKey) => {
+    setNetState(n);
+    document.cookie = `${NET_COOKIE}=${n}; path=/; max-age=31536000; samesite=lax`;
+    router.refresh(); // server pages re-read the cookie and swap data source
+  };
   return <Ctx.Provider value={{ net, setNet }}>{children}</Ctx.Provider>;
 }
 
 export const useNetwork = () => useContext(Ctx);
+/** Chain + deployment status for the selected network. */
+export const useNet = () => netInfo(useContext(Ctx).net);
 
 /** Testnet/mainnet dropdown. Mainnet is selectable to inspect; it shows "not deployed" everywhere. */
 export function NetToggle({ className = "" }: { className?: string }) {

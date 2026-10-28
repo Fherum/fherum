@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { PageHead } from "@/components/shell";
 import { Panel, Empty, Tag } from "@/components/ui";
-import { FHE_STATUS, PRIVACY_MODE, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
+import { FHE_STATUS, PRIVACY_MODE } from "@/lib/protocol";
+import { getNet } from "@/lib/net-server";
 
-export default function Overview() {
-  const live = isDeployed();
+export default async function Overview() {
+  const { live, chain: TARGET_CHAIN } = await getNet();
   return (
     <>
       <PageHead eyebrow="Overview" title="Your position">

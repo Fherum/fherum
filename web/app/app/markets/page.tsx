@@ -4,15 +4,16 @@ import { PageHead } from "@/components/shell";
 import { Empty, Panel, Th } from "@/components/ui";
 import { RateCurve } from "@/components/rate-curve";
 import { ActionPanel } from "@/components/action-panel";
-import { HARD_BOUNDS, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
+import { HARD_BOUNDS } from "@/lib/protocol";
+import { getNet } from "@/lib/net-server";
 import { MARKETS, amt, pct, tryReadMarket } from "@/lib/chain";
 
 const DEMO_ROUTE = "/app/markets/0x0000000000000000000000000000000000000000";
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const COLS = ["Collateral → Loan", "Supply APY", "Borrow APY", "Utilization", "Liquidity", "LLTV", "Oracle", "Curator", "Privacy"];
 
-export default function Markets() {
-  const live = isDeployed();
+export default async function Markets() {
+  const { live, chain: TARGET_CHAIN } = await getNet();
   return (
     <>
       <PageHead eyebrow="Forgehub" title="Markets"

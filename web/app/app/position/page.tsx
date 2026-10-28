@@ -1,7 +1,8 @@
 import { PageHead } from "@/components/shell";
 import { Empty, Panel, Tag } from "@/components/ui";
-import { ActionPanel } from "@/components/action-panel";
+import Link from "next/link";
 import { FIELDS } from "@/lib/protocol";
+import { MARKETS } from "@/lib/chain";
 
 const LEGEND = [
   ["ok", "Confirmed", "Read from chain at a known block."],
@@ -40,7 +41,14 @@ export default function Position() {
             </ul>
           </Panel>
         </div>
-        <ActionPanel />
+        <Panel title="Act on a market">
+          <div className="p-5 grid gap-3 text-sm">
+            <p className="text-ink-2">Supply, borrow, repay and withdraw from the market page. Each action reads your wallet balance and position live.</p>
+            {MARKETS.length
+              ? MARKETS.map((m) => <Link key={m} href={`/app/markets/${m}`} className="font-mono text-xs text-bronze hover:underline break-all">Open market {m.slice(0, 6)}…{m.slice(-4)} →</Link>)
+              : <p className="text-mute text-xs">No market is deployed on this network yet.</p>}
+          </div>
+        </Panel>
       </div>
     </>
   );

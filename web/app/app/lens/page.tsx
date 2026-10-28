@@ -1,14 +1,15 @@
 import { PageHead } from "@/components/shell";
 import { Empty, Panel, Tag } from "@/components/ui";
-import { isDeployed } from "@/lib/protocol";
+import { getNet } from "@/lib/net-server";
 
 const METRICS = ["Total supplied", "Total borrowed", "Available liquidity", "Utilization"];
 
-export default function Lens() {
+export default async function Lens() {
+  const { live } = await getNet();
   return (
     <>
       <PageHead eyebrow="Steel Lens" title="Public market data"
-        aside={<Tag tone={isDeployed() ? "ok" : "mute"}>{isDeployed() ? "Direct on-chain read" : "No source configured"}</Tag>}>
+        aside={<Tag tone={live ? "ok" : "mute"}>{live ? "Direct on-chain read" : "No source configured"}</Tag>}>
         Aggregates only. No individual position is ever shown here. Every value states whether it came from a direct LensReader call or an indexer, and when.
       </PageHead>
       <div className="grid gap-4">

@@ -3,8 +3,10 @@ import Link from "next/link";
 import { PageHead } from "@/components/shell";
 import { Empty, Panel, Tag } from "@/components/ui";
 import { RateCurve } from "@/components/rate-curve";
-import { ActionPanel } from "@/components/action-panel";
-import { DEPLOYMENT, FHE_STATUS, HARD_BOUNDS, PRIVACY_MODE, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
+import { ActionPanel, type PanelMarket } from "@/components/action-panel";
+import { DEPLOYMENT, FHE_STATUS, HARD_BOUNDS, PRIVACY_MODE } from "@/lib/protocol";
+import { getNet } from "@/lib/net-server";
+import type { NetInfo } from "@/lib/net";
 import { amt, pct, ray, tryReadMarket, wadNum, type MarketView, type Snapshot } from "@/lib/chain";
 
 type Fmt = "pct" | "loan" | "col" | "ray" | "wad" | "usd";
@@ -33,6 +35,14 @@ function fmt(m: MarketView, key: keyof Snapshot, f: Fmt) {
   }
 }
 
+// Plain serializable props for the client panel (no bigint across the server/client boundary).
+const toPanel = (m: MarketView): PanelMarket => ({
+  address: m.address,
+  loan: { address: m.loan.address, symbol: m.loan.symbol, decimals: m.loan.decimals },
+  collateral: { address: m.collateral.address, symbol: m.collateral.symbol, decimals: m.collateral.decimals },
+  paused: m.snap.paused, borrowPaused: m.snap.borrowPaused, removeCollateralPaused: m.snap.removeCollateralPaused, repayPaused: m.snap.repayPaused,
+});
+
 function Addr({ a }: { a: string }) {
   const href = DEPLOYMENT.explorer ? `${DEPLOYMENT.explorer.replace(/\/$/, "")}/address/${a}` : null;
   return href
@@ -40,8 +50,8 @@ function Addr({ a }: { a: string }) {
     : <span className="break-all">{a}</span>;
 }
 
-function Body({ id, m, error, loading }: { id: string; m?: MarketView; error?: string; loading?: boolean }) {
-  const live = isDeployed();
+function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: MarketView; error?: string; loading?: boolean }) {
+  const { live, chain: TARGET_CHAIN } = n;
   const note = loading ? "reading LensReader…" : m ? "LensReader · live" : live ? "read failed" : "no data · not deployed";
   const kpis: [string, string | null][] = [
     ["Supply rate", m ? pct(m.snap.supplyRatePerYearWad) : null],
@@ -147,26 +157,27 @@ function Body({ id, m, error, loading }: { id: string; m?: MarketView; error?: s
           </div>
         </Panel>
       </div>
-      <div className="2xl:sticky 2xl:top-24"><ActionPanel /></div>
+      <div className="xl:sticky xl:top-24 min-w-0"><ActionPanel market={m ? toPanel(m) : undefined} /></div>
     </div>
   );
 }
 
-async function Live({ id }: { id: `0x${string}` }) {
+async function Live({ id, n }: { id: `0x${string}`; n: NetInfo }) {
   const r = await tryReadMarket(id);
-  return r.ok ? <Body id={id} m={r.m} /> : <Body id={id} error={r.error} />;
+  return r.ok ? <Body id={id} n={n} m={r.m} /> : <Body id={id} n={n} error={r.error} />;
 }
 
 export default async function MarketDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const live = isDeployed();
+  const n = await getNet();
+  const { live, chain: TARGET_CHAIN } = n;
   const valid = isAddr(id);
 
   return (
     <>
       <Link href="/app/markets" className="inline-block mb-6 font-mono text-xs uppercase text-ink-2 hover:text-bronze">← All markets</Link>
       <PageHead eyebrow={`Forgehub · market ${short(id)}`} title="Market"
-        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>Privacy · {PRIVACY_MODE}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? "Deployed · testnet" : "Not deployed"}</Tag></div>}>
+        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>Privacy · {PRIVACY_MODE}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? `Deployed · ${n.net}` : "Not deployed"}</Tag></div>}>
         One collateral asset, one loan asset, curator-set limits inside contract hard bounds. Every figure below is read from LensReader.snapshot(market) — nothing is shown until that call returns.
       </PageHead>
 
@@ -175,8 +186,8 @@ export default async function MarketDetail({ params }: { params: Promise<{ id: s
       )}
 
       {live && valid
-        ? <Suspense fallback={<Body id={id} loading />}><Live id={id as `0x${string}`} /></Suspense>
-        : <Body id={id} />}
+        ? <Suspense fallback={<Body id={id} n={n} loading />}><Live id={id as `0x${string}`} n={n} /></Suspense>
+        : <Body id={id} n={n} />}
     </>
   );
 }

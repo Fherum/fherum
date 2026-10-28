@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { NetworkSwitch, WalletButton, WalletProvider } from "@/components/wallet";
-import { isDeployed } from "@/lib/protocol";
+import { NetworkProvider, useNet } from "@/components/network-context";
+import type { Net } from "@/lib/net";
 
 const NAV = [
   { href: "/app", label: "Overview", k: "01" },
@@ -17,7 +18,16 @@ const NAV = [
   { href: "/app/settings", label: "Settings", k: "07" },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, net }: { children: ReactNode; net: Net }) {
+  return <NetworkProvider initial={net}><Shell>{children}</Shell></NetworkProvider>;
+}
+
+function LiveNote() {
+  const { live, chain } = useNet();
+  return <>{live ? `Reading LensReader · ${chain.name}` : `${chain.name}: not deployed — nothing below is live data`}</>;
+}
+
+function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const active = (h: string) => (h === "/app" ? path === "/app" : path.startsWith(h));
@@ -50,9 +60,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-30 h-16 border-b border-line bg-bg/90 backdrop-blur px-4 md:px-6 flex items-center gap-3">
             <button className="lg:hidden h-9 px-3 border-2 border-ink font-mono text-xs uppercase" onClick={() => setOpen(true)} aria-label="Open navigation">Menu</button>
             <span className="hidden md:inline font-mono text-[11px] text-mute">
-              {isDeployed() ? "Reading LensReader" : "No deployment configured — nothing below is live data"}
+              <LiveNote />
             </span>
-            <div className="ml-auto flex items-center gap-3"><span className="hidden md:inline-flex"><NetworkSwitch /></span><WalletButton /></div>
+            <div className="ml-auto flex items-center gap-3"><NetworkSwitch /><WalletButton /></div>
           </header>
           <main className="relative flex-1 p-4 md:p-6 lg:p-10">
             <div className="relative max-w-[1280px]">{children}</div>

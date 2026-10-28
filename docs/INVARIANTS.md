@@ -71,14 +71,16 @@ Liquidation requires Health Factor below 1, a fresh oracle, and a liquidator oth
 
 Foundry unit tests cover the formulas, oracle failures, pause, caps, credit isolation, the 1.6 Health Factor example, a one-year accrual vector, and bonus-exact liquidation. Fuzz tests cover a non-decreasing rate, non-decreasing indexes, 512-bit products, value round-trips, liquidation quotes, and borrow/withdraw Health Factor. Invariant tests replay supply, withdraw, collateral, borrow, repay, liquidation, time, and pause.
 
-## Known gaps (not G2)
+## Known gaps
 
-- No timelock. A compromised curator can move parameters inside the hard bounds immediately.
-- No bad-debt socialization. A position can be left with debt after collateral is exhausted.
-- Accrual continues while paused. A long pause with liquidation blocked can deepen insolvency. Repay stays open.
+G4 closed the timelock, lens, and eligibility gaps for factory markets. The items below are still open. See `G4-REPORT.md`.
+
+- Bad debt is not socialized. A liquidation can exhaust collateral and leave borrow shares on the position. `LiquidationEngine.socializesBadDebt` is false.
+- Accrual continues while paused. A long pause with liquidation blocked can deepen insolvency. Repay stays open. Supply and borrow-asset withdrawal stay open.
 - Stale oracles block liquidation as well as new risk. That avoids seizing on a dead price and can delay liquidation.
 - Collateral deposits are not under the borrow-asset supply cap.
 - One collateral asset and one borrow asset per market. No multi-asset portfolio.
 - Cross-spoke fungible liquidity is not enabled.
 - Contracts are not upgradeable. The position layout is reserved so a later version can migrate without reshuffling slots, but that migration is not implemented.
 - Confidential mode is not implemented. G1 was NO-GO for FHE on 4663/46630.
+- Markets constructed with an EOA curator can still change risk parameters immediately. Markets created by `MarketFactory` grant that role only to the timelock.

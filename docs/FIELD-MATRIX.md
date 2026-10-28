@@ -1,4 +1,4 @@
-# Field matrix (G2 shipping class)
+# Field matrix (shipping class)
 
 Brief ORC-20261028-01. The target column is the G0 classification for a later confidential release. The shipping column is what this repository stores and emits today. G1 was NO-GO for FHE on Robinhood Chain 4663/46630, so the shipping class of position amounts is Public.
 
@@ -15,7 +15,9 @@ Brief ORC-20261028-01. The target column is the G0 classification for a later co
 | Health Factor | Authorized result | Public view, computed, not stored | RiskEngine |
 | Liquidation eligibility | Minimum signal | Public, because amounts are public | `isLiquidatable` |
 | ERC-20 transfer amounts | Public | Public | Token transfers user to market to hub |
-| Curator and pause actions | Public | Public | Events |
+| Curator and pause actions | Public | Public | Events. Factory markets route risk setters through the timelock |
+| Entry eligibility | Public | Public address set or off | `AllowlistEligibility`. Default is off |
+| Pause scope | Public | Borrow, collateral withdrawal, liquidation | `EmergencyController` taxonomy. Repay has no pause bit |
 | Ciphertext handles | Vendor handles | Reserved slots, always zero | Position slots 2-4, 6-8, 10-13 |
 | Decryption metadata | Provider-dependent | None. `decrypt` only unpacks a public integer | PlaintextFHEAdapter |
 

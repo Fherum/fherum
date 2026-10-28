@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {EmergencyController} from "../../src/EmergencyController.sol";
+import {IEligibilityAdapter} from "../../src/interfaces/IEligibilityAdapter.sol";
 import {InterestRateModel} from "../../src/InterestRateModel.sol";
 import {LiquidationEngine} from "../../src/LiquidationEngine.sol";
 import {LiquidityHub} from "../../src/LiquidityHub.sol";
@@ -109,6 +110,7 @@ contract ProtocolFixture is Test {
         cfg.slope1Wad = 0.04e18;
         cfg.slope2Wad = 0.75e18;
         cfg.optimalUtilWad = 0.8e18;
+        cfg.eligibility = IEligibilityAdapter(address(0));
     }
 
     function _fund(address user, Market spoke) internal {

@@ -50,3 +50,5 @@ Market-level `privacyMode()` is a constant `Public`. There is no function that r
 `PlaintextFHEAdapter` does not steal a high bit as a "ciphertext flag". The full `uint256` range in word 0 is a public integer. Tagging word 0 in place would make large balances ambiguous, so handles belong in the reserved words plus a version bump, not in a flag bit.
 
 Reserve totals, indexes, caps, and oracle config stay public. They are not position fields. The field matrix is `docs/FIELD-MATRIX.md`.
+
+G4 appends `eligibility` on `Market` storage. It does not add a variable to `PositionManager`, and it does not move the position mapping. The slot table above is unchanged.

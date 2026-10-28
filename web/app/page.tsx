@@ -56,7 +56,7 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            <div className="relative h-[420px] lg:h-[620px] pointer-events-auto hidden md:block"><Hero3D /></div>
+            <div className="relative h-[420px] lg:h-[700px] lg:scale-105 pointer-events-auto hidden md:block"><Hero3D /></div>
           </div>
           <dl className="grid grid-cols-2 md:grid-cols-4 border-2 border-[#e9e4d8] bg-[#050404]/88 font-mono text-[11px] uppercase pointer-events-auto">
             {[["Chain", `${TARGET_CHAIN.id} · testnet`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", "Public · FHE pending"], ["Audit", "None yet"]].map(([k, v], i) => (

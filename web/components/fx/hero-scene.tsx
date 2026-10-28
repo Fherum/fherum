@@ -119,7 +119,7 @@ export default function HeroScene({ reduced, onFlip, onPick, picked }: {
   reduced: boolean; onFlip: () => void; onPick: (i: number) => void; picked: number | null;
 }) {
   return (
-    <Canvas dpr={[1, 2]} camera={{ position: [0, 0.6, 7.6], fov: 40 }} frameloop={reduced ? "demand" : "always"} gl={{ antialias: true, alpha: true }}>
+    <Canvas dpr={[1, 2]} camera={{ position: [0, 0.4, 6.2], fov: 40 }} frameloop={reduced ? "demand" : "always"} gl={{ antialias: true, alpha: true }}>
       <ambientLight intensity={0.25} />
       <directionalLight position={[4, 5, 3]} intensity={2} />
       <pointLight position={[-4, -2, 2]} intensity={30} color="#c08a5b" />

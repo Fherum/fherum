@@ -21,16 +21,19 @@ export function Hero3D() {
   const [picked, setPicked] = useState<number | null>(null);
   return (
     <div className="relative size-full min-h-[460px]">
-      <div className="absolute inset-0 glow-orb" aria-hidden />
+      <div aria-hidden className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square w-[78%] max-w-[560px] rounded-full bg-[#050404] border-2 border-[#e9e4d8] shadow-[12px_12px_0_#120c08]">
+        <div className="absolute inset-3 rounded-full border border-dashed border-[#e9e4d8]/30 motion-safe:animate-[spin_40s_linear_infinite]" />
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff5a1f] text-black font-mono text-[10px] uppercase px-2">Specimen · FHE-01</span>
+      </div>
       <div className="absolute inset-0" aria-label="Interactive 3D FHERUM coin. Drag to rotate, click the coin to flip, click orbiting tokens for details." role="img">
         <Scene reduced={reduced} onFlip={() => setEnc((v) => !v)} onPick={(i) => setPicked((p) => (p === i ? null : i))} picked={picked} />
       </div>
 
-      <div className="pointer-events-none absolute left-0 bottom-4 font-mono text-[11px] text-mute flex gap-3 items-center">
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-6 bg-[#050404] border-2 border-[#e9e4d8] px-2 py-1 font-mono text-[10px] uppercase text-[#e9e4d8] flex gap-3 items-center">
         <span className="pulse-dot" aria-hidden /> drag · click coin · click tokens
       </div>
 
-      <div className="pointer-events-none absolute right-0 top-4 w-60 glass p-3 font-mono text-[11px]">
+      <div className="pointer-events-none absolute right-2 top-0 w-60 glass p-3 font-mono text-[11px]">
         <div className="flex justify-between text-mute mb-1.5"><span>example position</span><span className={enc ? "text-bronze" : "text-warn"}>{enc ? "◆ encrypted" : "▲ plaintext"}</span></div>
         <div className="text-ink text-sm"><Scramble text={enc ? "0x9f3a…c41e" : "$10,000 · LT 80%"} /></div>
         <div className="text-ink-2"><Scramble text={enc ? "0x07bd…e902" : "debt $5,000 · HF 1.60"} /></div>

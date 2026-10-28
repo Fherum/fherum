@@ -13,7 +13,7 @@ const glyph: Record<Tone, string> = { ok: "●", warn: "▲", bad: "■", mute: 
 
 export function Tag({ tone = "mute", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 border border-line px-2 py-[3px] font-mono text-[11px] leading-none text-ink-2 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 border border-line-2 bg-bg px-2 py-[3px] font-mono text-[11px] leading-none text-ink-2 whitespace-nowrap">
       <span aria-hidden className={`${toneCls[tone]} text-[8px]`}>{glyph[tone]}</span>
       {children}
     </span>
@@ -32,10 +32,10 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`border border-line bg-s1 ${className}`}>
+    <section className={`border-2 border-ink bg-s1 shadow-[8px_8px_0_var(--bronze)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[12px_12px_0_var(--bronze)] ${className}`}>
       {(title || aside) && (
-        <header className="flex items-center justify-between gap-4 border-b border-line px-4 h-11">
-          <h2 className="eyebrow">{title}</h2>
+        <header className="flex items-center justify-between gap-4 border-b-2 border-ink px-4 h-12 bg-ink text-bg">
+          <h2 className="font-stencil uppercase text-xl tracking-wide">{title}</h2>
           {aside}
         </header>
       )}
@@ -47,7 +47,7 @@ export function Panel({
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="px-6 py-10 grid gap-2 max-w-xl">
-      <p className="text-ink text-[15px]">{title}</p>
+      <p className="font-stencil uppercase text-4xl leading-none">{title}</p>
       {children && <div className="text-mute text-sm leading-relaxed pretty">{children}</div>}
       {action && <div className="pt-2">{action}</div>}
     </div>
@@ -69,8 +69,8 @@ export function Btn({
 }) {
   const cls =
     variant === "primary"
-      ? "chamfer-sm bg-ink text-bg hover:bg-white"
-      : "border border-line-2 text-ink hover:border-mute";
+      ? "bg-bronze text-black font-mono uppercase text-xs shadow-[4px_4px_0_var(--ink)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--ink)]"
+      : "border-2 border-ink text-ink font-mono uppercase text-xs hover:bg-ink hover:text-bg";
   const base = `inline-flex h-10 items-center gap-2 px-4 text-sm font-medium transition-colors ${cls} ${
     disabled ? "opacity-40 pointer-events-none" : ""
   }`;

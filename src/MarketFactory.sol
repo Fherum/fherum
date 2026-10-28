@@ -55,6 +55,8 @@ contract MarketFactory is AccessControl {
 
     error ZeroAddress();
     error AssetNotListed(address asset);
+    error ComponentMismatch();
+    error NotTimelockControlled();
 
     constructor(
         address admin,
@@ -86,46 +88,64 @@ contract MarketFactory is AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    /// @notice Deploy a market, register the spoke, set the borrow-asset credit line, and enroll it with the curator.
-    function createMarket(Params calldata params) external onlyRole(DEFAULT_ADMIN_ROLE) returns (Market market) {
-        if (!hub.assetAllowed(params.collateralAsset)) revert AssetNotListed(params.collateralAsset);
-        if (!hub.assetAllowed(params.borrowAsset)) revert AssetNotListed(params.borrowAsset);
+    /// @notice Build the config a market must be deployed with to be accepted by `registerMarket`.
+    /// @dev Market initcode exceeds the 24 KB EIP-170 limit for any deployer contract, so markets are deployed
+    ///      directly by an EOA/script with this config, then registered here.
+    function configFor(Params calldata params) external view returns (Market.MarketConfig memory) {
+        return Market.MarketConfig({
+            governor: address(timelock),
+            curator: address(timelock),
+            feeRecipient: params.feeRecipient,
+            hub: hub,
+            collateralAsset: params.collateralAsset,
+            borrowAsset: params.borrowAsset,
+            oracle: oracle,
+            interestRateModel: interestRateModel,
+            emergency: emergency,
+            fhe: fhe,
+            risk: risk,
+            liquidationEngine: liquidationEngine,
+            ltvWad: params.ltvWad,
+            liquidationThresholdWad: params.liquidationThresholdWad,
+            liquidationBonusWad: params.liquidationBonusWad,
+            closeFactorWad: params.closeFactorWad,
+            reserveFactorWad: params.reserveFactorWad,
+            dustValueWad: params.dustValueWad,
+            supplyCap: params.supplyCap,
+            borrowCap: params.borrowCap,
+            walletSupplyCap: params.walletSupplyCap,
+            walletBorrowCap: params.walletBorrowCap,
+            baseRateWad: params.baseRateWad,
+            slope1Wad: params.slope1Wad,
+            slope2Wad: params.slope2Wad,
+            optimalUtilWad: params.optimalUtilWad,
+            eligibility: params.eligibility
+        });
+    }
 
-        market = new Market(
-            Market.MarketConfig({
-                governor: address(timelock),
-                curator: address(timelock),
-                feeRecipient: params.feeRecipient,
-                hub: hub,
-                collateralAsset: params.collateralAsset,
-                borrowAsset: params.borrowAsset,
-                oracle: oracle,
-                interestRateModel: interestRateModel,
-                emergency: emergency,
-                fhe: fhe,
-                risk: risk,
-                liquidationEngine: liquidationEngine,
-                ltvWad: params.ltvWad,
-                liquidationThresholdWad: params.liquidationThresholdWad,
-                liquidationBonusWad: params.liquidationBonusWad,
-                closeFactorWad: params.closeFactorWad,
-                reserveFactorWad: params.reserveFactorWad,
-                dustValueWad: params.dustValueWad,
-                supplyCap: params.supplyCap,
-                borrowCap: params.borrowCap,
-                walletSupplyCap: params.walletSupplyCap,
-                walletBorrowCap: params.walletBorrowCap,
-                baseRateWad: params.baseRateWad,
-                slope1Wad: params.slope1Wad,
-                slope2Wad: params.slope2Wad,
-                optimalUtilWad: params.optimalUtilWad,
-                eligibility: params.eligibility
-            })
-        );
+    /// @notice Verify a deployed market is wired to this factory's components and controlled only by the
+    ///         timelock, then register the spoke, set the borrow-asset credit line, and enroll it with the curator.
+    /// @dev Admin-gated. The checks catch misconfiguration; they read the market's own getters, so the admin
+    ///      must still only register markets deployed from the audited Market bytecode.
+    function registerMarket(Market market, uint256 creditLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(market) == address(0)) revert ZeroAddress();
+        address collateralAsset = market.collateralAsset();
+        address borrowAsset = market.borrowAsset();
+        if (!hub.assetAllowed(collateralAsset)) revert AssetNotListed(collateralAsset);
+        if (!hub.assetAllowed(borrowAsset)) revert AssetNotListed(borrowAsset);
+        if (
+            market.hub() != hub || market.oracle() != oracle || market.interestRateModel() != interestRateModel
+                || market.emergency() != emergency || market.fhe() != fhe || market.risk() != risk
+                || market.liquidationEngine() != liquidationEngine
+        ) revert ComponentMismatch();
+        if (market.initialGovernor() != address(timelock) || market.initialCurator() != address(timelock)) {
+            revert NotTimelockControlled();
+        }
+        if (market.positions().market() != address(market)) revert ComponentMismatch();
 
         hub.registerSpoke(address(market));
-        hub.setCreditLimit(address(market), params.borrowAsset, params.creditLimit);
+        hub.setCreditLimit(address(market), borrowAsset, creditLimit);
         registry.registerMarket(address(market));
-        emit MarketCreated(address(market), params.collateralAsset, params.borrowAsset);
+        emit MarketCreated(address(market), collateralAsset, borrowAsset);
     }
 }

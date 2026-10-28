@@ -58,8 +58,10 @@ contract G4Fixture is ProtocolFixture {
     }
 
     function _createCuratedMarket() internal returns (Market spoke) {
+        MarketFactory.Params memory params = _curatedParams();
+        spoke = new Market(factory.configFor(params));
         vm.prank(governor);
-        spoke = factory.createMarket(_curatedParams());
+        factory.registerMarket(spoke, params.creditLimit);
     }
 
     function _approveSpoke(address user, Market spoke) internal {

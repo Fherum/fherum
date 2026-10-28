@@ -83,6 +83,9 @@ contract Market is AccessControl, ReentrancyGuard {
     RiskEngine public immutable risk;
     LiquidationEngine public immutable liquidationEngine;
     PositionManager public immutable positions;
+    /// @notice Governor and curator granted at construction. MarketFactory checks these before registering.
+    address public immutable initialGovernor;
+    address public immutable initialCurator;
 
     address public feeRecipient;
     uint256 public ltvWad;
@@ -176,6 +179,8 @@ contract Market is AccessControl, ReentrancyGuard {
         risk = cfg.risk;
         liquidationEngine = cfg.liquidationEngine;
         feeRecipient = cfg.feeRecipient;
+        initialGovernor = cfg.governor;
+        initialCurator = cfg.curator;
         positions = new PositionManager(cfg.fhe, address(this));
 
         _grantRole(DEFAULT_ADMIN_ROLE, cfg.governor);

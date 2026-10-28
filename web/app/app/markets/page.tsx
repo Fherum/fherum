@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { PageHead } from "@/components/shell";
 import { Empty, Panel, Th } from "@/components/ui";
 import { RateCurve } from "@/components/rate-curve";
 import { ActionPanel } from "@/components/action-panel";
 import { HARD_BOUNDS, TARGET_CHAIN, isDeployed } from "@/lib/protocol";
 
+const DEMO_ROUTE = "/app/markets/0x0000000000000000000000000000000000000000";
 const COLS = ["Collateral → Loan", "Supply APY", "Borrow APY", "Utilization", "Liquidity", "LLTV", "Oracle", "Curator", "Privacy"];
 
 export default function Markets() {
@@ -42,6 +44,7 @@ export default function Markets() {
             <div className="border-t border-line">
               <Empty title={live ? "No markets created yet." : "No markets deployed on this network."}>
                 Markets are created through MarketFactory and listed here from LensReader. The rows above are layout placeholders, not data.
+                <Link href={DEMO_ROUTE} className="mt-4 inline-block font-mono text-xs uppercase text-bronze hover:underline">Preview market page layout (empty) →</Link>
               </Empty>
             </div>
           </Panel>

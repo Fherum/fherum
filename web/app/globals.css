@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* FHERUM — forged precision.
+   One accent (forged bronze). Steel only on the wordmark/hero. Depth from tone + hairlines, not glow. */
+:root {
+  --bg: #0a0a0b;
+  --s1: #111113;
+  --s2: #17171a;
+  --s3: #1e1e22;
+  --line: #26262b;
+  --line-2: #34343a;
+  --ink: #ece7df;
+  --ink-2: #b9b6b0;
+  --mute: #85878d;
+  --bronze: #c08a5b;
+  --bronze-ink: #1a120b;
+  --ok: #5fb38a;
+  --warn: #d9a441;
+  --bad: #e06a5a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-mute: var(--mute);
+  --color-bronze: var(--bronze);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-display-serif);
+  --font-stencil: var(--font-stencil);
+}
+
+html { background: var(--bg); color-scheme: dark; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--bronze); color: var(--bronze-ink); }
+
+.num { font-variant-numeric: tabular-nums slashed-zero; }
+.eyebrow { font-family: var(--font-plex-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.balance { text-wrap: balance; }
+.pretty { text-wrap: pretty; }
+
+.steel {
+  background: linear-gradient(180deg, #f4f2ee 0%, #a9abb0 46%, #e4e2de 54%, #7c7e84 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.chamfer { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.chamfer-sm { clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%); }
+
+.lattice {
+  background-image:
+    linear-gradient(to right, rgba(236,231,223,.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(236,231,223,.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 60% 75% at 75% 45%, #000 25%, transparent 75%);
+}
+
+.grain { position: relative; }
+.grain::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:focus-visible { outline: 1.5px solid var(--bronze); outline-offset: 2px; }
+input[type="range"] { accent-color: var(--bronze); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation: none !important; transition: none !important; }
+html { scroll-behavior: smooth; }
+
+
+/* ── FX layer ───────────────────────────────────────────── */
+.glass { background: linear-gradient(180deg, rgb(255 255 255 / .05), rgb(255 255 255 / .015)); border: 1px solid rgb(255 255 255 / .09); backdrop-filter: blur(14px); border-radius: 14px; }
+.glow-orb { background: radial-gradient(40% 40% at 55% 50%, rgb(192 138 91 / .22), transparent 70%), radial-gradient(30% 30% at 40% 60%, rgb(154 166 201 / .12), transparent 70%); filter: blur(20px); }
+.spotlight { background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 30%), rgb(192 138 91 / .07), transparent 60%); }
+.nft-card { border-radius: 18px; overflow: hidden; background:
+  radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--hue) 22%, transparent), transparent 60%),
+  linear-gradient(180deg, #17171a, #0d0d0f); border: 1px solid color-mix(in oklab, var(--hue) 35%, #26262b);
+  box-shadow: 0 30px 60px -20px rgb(0 0 0 / .8), inset 0 1px 0 rgb(255 255 255 / .06); }
+.nft-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background-image: linear-gradient(rgb(255 255 255 / .025) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .025) 1px, transparent 1px); background-size: 18px 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin 18s linear infinite; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { animation: marquee 40s linear infinite; }
+.marquee-mask { mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+@keyframes pulse { 0%,100% { opacity: .35; transform: scale(.8) } 50% { opacity: 1; transform: scale(1.2) } }
+.pulse-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--bronze); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes shine { to { background-position: 200% center; } }
+.shine { background: linear-gradient(110deg, #8d8a85 20%, #f4efe8 40%, #c08a5b 50%, #f4efe8 60%, #8d8a85 80%); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s linear infinite; }
+.btn-glow { position: relative; isolation: isolate; }
+.btn-glow::before { content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; background: conic-gradient(from var(--a, 0deg), #c08a5b, #f4efe8, #9aa6c9, #c08a5b); filter: blur(10px); opacity: .55; animation: spin 4s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .spin-slow, .marquee, .pulse-dot, .shine, .btn-glow::before { animation: none !important; }
+}
+.reduce-motion .spin-slow, .reduce-motion .marquee, .reduce-motion .pulse-dot, .reduce-motion .shine { animation: none !important; }
+
+.font-stencil{font-family:var(--font-stencil),Impact,sans-serif;font-weight:900}

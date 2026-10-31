@@ -33,7 +33,7 @@ export const useNet = () => netInfo(useContext(Ctx).net);
 /** Testnet/mainnet dropdown. Mainnet is selectable to inspect; it shows "not deployed" everywhere. */
 export function NetToggle({ className = "" }: { className?: string }) {
   const { net, setNet } = useNetwork();
-  const items: NetItem[] = (["testnet", "mainnet"] as const).map((k) => {
+  const items: NetItem[] = (["testnet"] as const).map((k) => {
     const d = DEPLOYMENTS[k], live = d.contracts.length > 0;
     return { key: k, label: k, chainId: d.chainId, dot: live ? "ok" : "off", note: live ? undefined : "not deployed", hint: d.label };
   });

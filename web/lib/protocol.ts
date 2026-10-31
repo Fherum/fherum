@@ -98,7 +98,7 @@ export const STACK: {
 ];
 
 export const STATUS_LABEL: Record<ModuleStatus, string> = {
-  "in-repo": "Contracts in repo · not deployed",
+  "in-repo": "Deployed on testnet · mainnet pending",
   "public-mode": "Runs on public values",
   "awaiting-vendor": "Confidential mode awaiting vendor",
 };

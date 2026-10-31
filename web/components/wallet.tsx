@@ -128,7 +128,7 @@ export function NetworkSwitch() {
   const { w, switchChain } = useWallet();
   const { net, setNet } = useNetwork();
   const walletChain = w.status === "connected" ? w.chainId : null;
-  const items: NetItem[] = (["testnet", "mainnet"] as const).map((k) => {
+  const items: NetItem[] = (["testnet"] as const).map((k) => {
     const c = CHAINS[k], live = DEPLOYMENTS[k].contracts.length > 0;
     const needsSwitch = k === net && walletChain !== null && walletChain !== c.id;
     return {

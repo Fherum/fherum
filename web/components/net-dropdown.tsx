@@ -17,6 +17,12 @@ export function NetDropdown({ items, value, onSelect, className = "" }: { items:
     document.addEventListener("mousedown", down); document.addEventListener("keydown", key);
     return () => { document.removeEventListener("mousedown", down); document.removeEventListener("keydown", key); };
   }, [open]);
+  if (items.length === 1) return (
+    <div title={cur.hint} className={`font-mono text-[11px] uppercase h-9 px-3 inline-flex items-center gap-2 border border-current/30 ${className}`}>
+      <span aria-hidden className={`text-[8px] ${DOT[cur.dot][1]}`}>{DOT[cur.dot][0]}</span>
+      {cur.label}<span className="opacity-50">{cur.chainId}</span>
+    </div>
+  );
   return (
     <div ref={ref} className={`relative font-mono text-[11px] uppercase ${className}`}>
       <button type="button" aria-label="Network" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}

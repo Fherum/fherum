@@ -4,7 +4,8 @@ import { CHAINS, isDeployed } from "@/lib/protocol";
 
 export type Net = keyof typeof CHAINS;
 export const NET_COOKIE = "fherum.network";
-export const parseNet = (v?: string | null): Net => (v === "mainnet" ? "mainnet" : "testnet");
+// Network switching is disabled until mainnet ships: always testnet (old "mainnet" cookies are ignored).
+export const parseNet = (v?: string | null): Net => (void v, "testnet");
 
 /** live = contracts configured for this network. Only testnet has a deployment today. */
 export const netInfo = (net: Net) => ({ net, chain: CHAINS[net], live: net === "testnet" && isDeployed() });

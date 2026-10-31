@@ -78,7 +78,13 @@ const HUMAN: Record<string, string> = {
   ERC20InsufficientAllowance: "Token approval is too low. Try again.",
 };
 
-function explain(e: unknown): string {
+const HINT: Partial<Record<Action, string>> = {
+  Borrow: "Borrow rejected: above the market LTV, not enough pool liquidity, or a cap was hit. Add collateral or borrow less.",
+  Remove: "Removal rejected: it would push your Health Factor below 1. Repay first or remove less.",
+  Withdraw: "Withdrawal rejected: the pool lacks available liquidity for that amount right now.",
+};
+
+function explain(e: unknown, hint?: string): string {
   if ((e as { code?: number })?.code === 4001) return "You rejected the request in your wallet.";
   if (e instanceof BaseError) {
     const r = e.walk((x) => x instanceof ContractFunctionRevertedError);
@@ -87,6 +93,8 @@ function explain(e: unknown): string {
       return HUMAN[name] ?? `Reverted: ${name || r.reason || "unknown reason"}`;
     }
     if (/User (rejected|denied)/i.test(e.message)) return "You rejected the request in your wallet.";
+    // Some wallets/RPCs drop the revert data, so viem cannot name the error. Give an actionable hint instead of raw RPC text.
+    if (/execution reverted|reverted/i.test(e.message)) return hint ?? "The contract rejected this transaction. Check your collateral, the market limits and pool liquidity.";
     return e.shortMessage;
   }
   return e instanceof Error ? e.message.split("\n")[0] : "Transaction failed.";
@@ -201,7 +209,7 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
       setStage("done"); setAmount(""); setMsg(`${act.label} confirmed.`);
       setReceipt({ title: `${act.label} confirmed`, detail: `${amount} ${tok.symbol}`, hashes: [hash] });
       await refresh();
-    } catch (e) { setStage("error"); setMsg(explain(e)); }
+    } catch (e) { setStage("error"); setMsg(explain(e, HINT[a])); }
   }
 
   async function faucet() {
@@ -228,6 +236,8 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
   else if (w.chainId !== TARGET_CHAIN.id) cta = { label: `Switch to ${TARGET_CHAIN.name}`, onClick: () => switchChain(), disabled: false };
   else if (!live) cta = { label: act.label, disabled: true, reason: market ? "No market is deployed on this network yet." : "Open a market to act on it." };
   else if (pausedReason) cta = { label: act.label, disabled: true, reason: pausedReason };
+  else if (a === "Borrow" && pos && pos.collateral === ZERO) cta = { label: "Add collateral first", disabled: true, reason: `Borrowing needs ${market!.collateral.symbol} collateral. Use the Add collateral tab.` };
+  else if (a === "Repay" && pos && pos.debt === ZERO) cta = { label: "No debt to repay", disabled: true };
   else if (!parsed || parsed <= ZERO) cta = { label: "Enter an amount", disabled: true };
   else if (max !== null && parsed > max && a !== "Repay") cta = { label: "Amount too high", disabled: true, reason: `Max ${fmt(max, tok!.decimals)} ${tok!.symbol}.` };
   else cta = { label: busy ? "Working…" : act.label, onClick: run, disabled: busy };

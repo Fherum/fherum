@@ -65,9 +65,31 @@ export default async function Markets() {
             </Panel>
           </div>
         </div>
-        <div className="2xl:sticky 2xl:top-20"><ActionPanel /></div>
+        <div className="2xl:sticky 2xl:top-20"><Suspense fallback={<ActionPanel />}><DefaultPanel live={live} /></Suspense></div>
       </div>
     </>
+  );
+}
+
+/** Binds the side panel to the first live market so the list page is actionable, not a dead form. */
+async function DefaultPanel({ live }: { live: boolean }) {
+  if (!live || MARKETS.length === 0) return <ActionPanel />;
+  const r = await tryReadMarket(MARKETS[0]);
+  if (!r.ok) return <ActionPanel />;
+  const { m } = r;
+  return (
+    <div className="grid gap-2">
+      <p className="font-mono text-[11px] uppercase text-mute">
+        Acting on <Link href={`/app/markets/${m.address}`} className="text-ink hover:text-bronze">{m.collateral.symbol} → {m.loan.symbol}</Link>
+        {MARKETS.length > 1 ? " · open another market to switch" : ""}
+      </p>
+      <ActionPanel market={{
+        address: m.address,
+        loan: { address: m.loan.address, symbol: m.loan.symbol, decimals: m.loan.decimals },
+        collateral: { address: m.collateral.address, symbol: m.collateral.symbol, decimals: m.collateral.decimals },
+        paused: m.snap.paused, borrowPaused: m.snap.borrowPaused, removeCollateralPaused: m.snap.removeCollateralPaused, repayPaused: m.snap.repayPaused,
+      }} />
+    </div>
   );
 }
 

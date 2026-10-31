@@ -47,7 +47,7 @@ export default function Landing() {
           </h1>
           <div className="relative mt-10 mb-8 grid gap-6">
             <div className="flex flex-wrap items-end justify-between gap-6">
-              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-powered confidential lending architecture for Robinhood Chain. Collateral, debt and health factor stay ciphertext — every market stays auditable.</p>
+              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-powered confidential lending architecture for Robinhood Chain. Collateral, debt and health factor are designed to stay ciphertext once FHE ships — every market stays auditable. Testnet runs a simulated adapter.</p>
               <div className="flex gap-3">
                 <Link href="/app" className="h-12 px-5 inline-flex items-center bg-bronze text-black font-mono text-xs uppercase hover:brightness-110">{live ? "Launch app" : "Preview app"} →</Link>
                 <a href="#problem" className="h-12 px-5 inline-flex items-center border border-line-2 text-ink font-mono text-xs uppercase hover:border-bronze hover:text-bronze">Why</a>
@@ -59,7 +59,7 @@ export default function Landing() {
       </section>
 
       <div style={{ background: MOLTEN, color: INK }}>
-        <Marquee items={["VEILBOOK · confidential positions", "IRONCLAD · solvency on ciphertext", "FORGEHUB · curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
+        <Marquee items={["VEILBOOK · confidential positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
       </div>
 
       {/* PROBLEM — deep steel field with glyph rain + scroll-stacked cards */}

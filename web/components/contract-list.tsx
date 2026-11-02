@@ -27,7 +27,7 @@ export function ContractList() {
         <div className="mt-6 border-2 border-dashed border-[#e9e4d8]/40 p-10">
           <p className="font-stencil uppercase text-5xl md:text-6xl leading-none">Not deployed.</p>
           <p className="mt-4 max-w-xl text-sm text-[#e9e4d8]/70 leading-relaxed">
-            No FHERUM contracts exist on {d.label} ({d.chainId}) yet. Mainnet addresses will be published here only after deployment and audit — anything claiming to be FHERUM on mainnet today is not ours.
+            No FHERUM contracts exist on {d.label} ({d.chainId}) yet. Mainnet addresses will be published here only after deployment — anything claiming to be FHERUM on mainnet today is not ours.
           </p>
         </div>
       ) : (

@@ -6,14 +6,16 @@ import { RateCurve } from "@/components/rate-curve";
 import { ActionPanel } from "@/components/action-panel";
 import { HARD_BOUNDS } from "@/lib/protocol";
 import { getNet } from "@/lib/net-server";
-import { MARKETS, amt, pct, tryReadMarket } from "@/lib/chain";
+import { marketsFor, amt, pct, tryReadMarket } from "@/lib/chain";
+import type { Net } from "@/lib/net";
 
 const DEMO_ROUTE = "/app/markets/0x0000000000000000000000000000000000000000";
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const COLS = ["Collateral → Loan", "Supply APY", "Borrow APY", "Utilization", "Liquidity", "LLTV", "Oracle", "Curator", "Privacy"];
 
 export default async function Markets() {
-  const { live, chain: TARGET_CHAIN } = await getNet();
+  const { live, chain: TARGET_CHAIN, net } = await getNet();
+  const MARKETS = marketsFor(net);
   return (
     <>
       <PageHead eyebrow="Forgehub" title="Markets"
@@ -34,7 +36,7 @@ export default async function Markets() {
                 </thead>
                 <tbody>
                   {live && MARKETS.length > 0
-                    ? MARKETS.map((a) => <Suspense key={a} fallback={<Placeholder r={0} />}><Row address={a} /></Suspense>)
+                    ? MARKETS.map((a) => <Suspense key={a} fallback={<Placeholder r={0} />}><Row address={a} net={net} /></Suspense>)
                     : [0, 1, 2].map((r) => <Placeholder key={r} r={r} />)}
                 </tbody>
               </table>
@@ -65,16 +67,17 @@ export default async function Markets() {
             </Panel>
           </div>
         </div>
-        <div className="2xl:sticky 2xl:top-20"><Suspense fallback={<ActionPanel />}><DefaultPanel live={live} /></Suspense></div>
+        <div className="2xl:sticky 2xl:top-20"><Suspense fallback={<ActionPanel />}><DefaultPanel live={live} net={net} /></Suspense></div>
       </div>
     </>
   );
 }
 
 /** Binds the side panel to the first live market so the list page is actionable, not a dead form. */
-async function DefaultPanel({ live }: { live: boolean }) {
+async function DefaultPanel({ live, net }: { live: boolean; net: Net }) {
+  const MARKETS = marketsFor(net);
   if (!live || MARKETS.length === 0) return <ActionPanel />;
-  const r = await tryReadMarket(MARKETS[0]);
+  const r = await tryReadMarket(MARKETS[0], net);
   if (!r.ok) return <ActionPanel />;
   const { m } = r;
   return (
@@ -105,8 +108,8 @@ function Placeholder({ r }: { r: number }) {
   );
 }
 
-async function Row({ address }: { address: `0x${string}` }) {
-  const r = await tryReadMarket(address);
+async function Row({ address, net }: { address: `0x${string}`; net: Net }) {
+  const r = await tryReadMarket(address, net);
   const href = `/app/markets/${address}`;
   if (!r.ok) {
     return (

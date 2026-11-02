@@ -7,6 +7,8 @@ import {
 } from "viem";
 import { useWallet } from "@/components/wallet";
 import { DEPLOYMENTS } from "@/lib/deployments";
+import { AUDITED } from "@/lib/protocol";
+import Link from "next/link";
 import { useNet } from "@/components/network-context";
 import type { NetInfo } from "@/lib/net";
 
@@ -74,7 +76,7 @@ const HUMAN: Record<string, string> = {
   BorrowCapExceeded: "Market borrow cap reached.", WalletBorrowCapExceeded: "Your wallet borrow cap is reached.",
   NotEligible: "This wallet is not on the market allowlist.", ZeroAmount: "Amount is too small.",
   RepayTooSmall: "Repay amount is too small.",
-  ERC20InsufficientBalance: "Your wallet balance is too low. Use the testnet faucet below.",
+  ERC20InsufficientBalance: "Your wallet balance is too low (on testnet, use the faucet below).",
   ERC20InsufficientAllowance: "Token approval is too low. Try again.",
 };
 
@@ -181,6 +183,14 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
   try { parsed = tok && amount ? parseUnits(amount, tok.decimals) : null; } catch { parsed = null; }
   const busy = stage === "approve" || stage === "sign" || stage === "confirm";
 
+  // Mainnet: show the risk notice once (per browser) before the first transaction.
+  const [riskOpen, setRiskOpen] = useState(false);
+  const riskKey = "fherum.risk-ack.mainnet.v1";
+  function start() {
+    if (n.mainnet && typeof window !== "undefined" && localStorage.getItem(riskKey) !== "1") { setRiskOpen(true); return; }
+    run();
+  }
+
   async function run() {
     if (!market || !user || !tok || !parsed) return;
     const { pub, wal } = clients(chain);
@@ -240,7 +250,7 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
   else if (a === "Repay" && pos && pos.debt === ZERO) cta = { label: "No debt to repay", disabled: true };
   else if (!parsed || parsed <= ZERO) cta = { label: "Enter an amount", disabled: true };
   else if (max !== null && parsed > max && a !== "Repay") cta = { label: "Amount too high", disabled: true, reason: `Max ${fmt(max, tok!.decimals)} ${tok!.symbol}.` };
-  else cta = { label: busy ? "Working…" : act.label, onClick: run, disabled: busy };
+  else cta = { label: busy ? "Working…" : act.label, onClick: start, disabled: busy };
 
   const explorer = DEPLOYMENTS[n.net].explorer?.replace(/\/$/, "");
   const stageIdx = RAIL.findIndex(([s]) => s === stage);
@@ -291,7 +301,11 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
 
         <div className="border border-warn/30 bg-warn/5 p-3 text-xs leading-relaxed text-ink-2">
           <span className="text-warn" aria-hidden>▲ </span>
-          <strong className="font-medium text-ink">Public position · simulated encryption.</strong> Amounts, your address and token transfers are visible on {TARGET_CHAIN.name}. This testnet uses a mock FHE adapter, not real encryption.
+          {n.mainnet ? (
+            <><strong className="font-medium text-ink">Public mode · positions are visible on-chain · FHE privacy mode planned.</strong> Amounts, your address and token transfers are public on {TARGET_CHAIN.name}, like Aave or Compound. {AUDITED ? "" : "Contracts are not audited; caps are limited. "}<Link href="/risk" className="underline hover:text-bronze">Risks</Link></>
+          ) : (
+            <><strong className="font-medium text-ink">Public position · simulated encryption.</strong> Amounts, your address and token transfers are visible on {TARGET_CHAIN.name}. This testnet uses a mock FHE adapter, not real encryption.</>
+          )}
         </div>
 
         <p className="text-xs text-mute leading-relaxed pretty">{NOTE[a]}</p>
@@ -321,7 +335,7 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
           })}
         </ol>
 
-        {ready && market && (
+        {ready && market && !n.mainnet && (
           <div className="border-t border-line pt-4 grid gap-2">
             <p className="font-mono text-[10px] uppercase text-mute">Testnet faucet</p>
             <button type="button" onClick={faucet} disabled={busy}
@@ -332,8 +346,54 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
           </div>
         )}
       </div>
+      <RiskDialog open={riskOpen} chainName={TARGET_CHAIN.name}
+        onCancel={() => setRiskOpen(false)}
+        onAccept={() => { localStorage.setItem(riskKey, "1"); setRiskOpen(false); run(); }} />
       <TxModal data={receipt} explorer={explorer} chainName={TARGET_CHAIN.name} onClose={() => setReceipt(null)} />
     </div>
+  );
+}
+
+/** Mainnet risk notice, shown before the first transaction. Native <dialog>, not window.confirm. */
+function RiskDialog({ open, chainName, onAccept, onCancel }: { open: boolean; chainName: string; onAccept: () => void; onCancel: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const d = ref.current; if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+  const points = [
+    AUDITED ? "The contracts have been audited, but audits do not remove all risk." : "The contracts are NOT audited. Bugs can lose funds.",
+    "Supply and borrow caps are deliberately limited at launch.",
+    "Public mode: your address, amounts, debt and Health Factor are visible on-chain. FHE privacy mode is planned, not live.",
+    "Oracle prices can be wrong or stale; if Health Factor drops below 1.00 your collateral can be liquidated.",
+    "Not investment advice. Only use funds you can afford to lose.",
+  ];
+  return (
+    <dialog ref={ref} onClose={onCancel} aria-labelledby="risk-title"
+      className="m-auto w-[min(92vw,480px)] bg-s1 text-ink border border-warn/60 p-0 backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+      {open && (
+        <div className="p-6 grid gap-5">
+          <div className="grid gap-1.5">
+            <span className="font-mono text-[10px] uppercase text-warn">▲ Mainnet · real funds</span>
+            <h2 id="risk-title" className="text-xl font-medium">Before your first transaction</h2>
+            <p className="font-mono text-xs text-mute">{chainName}</p>
+          </div>
+          <ul className="grid gap-2 text-sm text-ink-2 leading-relaxed list-disc pl-5">
+            {points.map((p) => <li key={p}>{p}</li>)}
+          </ul>
+          <label className="flex items-start gap-3 text-sm">
+            <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} className="mt-1 accent-[var(--bronze)]" />
+            <span>I have read the <Link href="/risk" target="_blank" className="underline hover:text-bronze">risk disclosure</Link> and accept these risks.</span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={onCancel} className="h-11 border border-line-2 text-sm hover:border-mute">Cancel</button>
+            <button onClick={onAccept} disabled={!ok} className="chamfer-sm h-11 bg-ink text-bg text-sm font-medium hover:bg-white disabled:bg-s3 disabled:text-mute disabled:cursor-not-allowed">Continue</button>
+          </div>
+        </div>
+      )}
+    </dialog>
   );
 }
 

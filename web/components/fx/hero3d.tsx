@@ -8,8 +8,8 @@ import { Scramble } from "./scramble";
 const Scene = dynamic(() => import("./hero-scene"), { ssr: false, loading: () => <div className="size-full grid place-items-center font-mono text-xs text-mute">forging…</div> });
 
 const TOKEN_INFO = [
-  ["euint64 · collateral", "In confidential mode, your collateral amount is stored as an encrypted 64-bit integer handle."],
-  ["euint64 · debt", "Debt is encrypted the same way. Interest indexes stay public so accounting is auditable."],
+  ["euint64 · collateral", "Planned: in FHE privacy mode your collateral amount would be stored as an encrypted 64-bit integer handle."],
+  ["euint64 · debt", "Debt would be encrypted the same way. Interest indexes stay public so accounting is auditable."],
   ["ebool · solvent?", "IRONCLAD's target: compare collateral × LT ≥ debt on ciphertext and return only an encrypted yes/no."],
   ["0x… · handle", "On chain, observers see an opaque handle, not a number. Access control decides who may decrypt."],
   ["HF · ironclad", "Health Factor = collateral × LT ÷ debt. Below 1.00 the position becomes liquidatable."],

@@ -7,7 +7,7 @@ const CARDS = [
   ["01", "Your loan is public.", "On a transparent chain anyone can read your collateral, your debt and exactly how close you are to liquidation."],
   ["02", "That is a target.", "Visible thresholds invite liquidation hunting and copy-trading. Treasuries and funds stay away."],
   ["03", "Privacy can't break solvency.", "Hiding positions is worthless if liquidations stop working. The market must stay auditable."],
-  ["04", "So we encrypt the position, not the market.", "Collateral and debt become ciphertext. Totals, rates, oracles and curator actions stay public."],
+  ["04", "So the design encrypts the position, not the market.", "Collateral and debt are designed to become ciphertext once FHE ships. Totals, rates, oracles and curator actions stay public."],
 ];
 
 export function StackedCards() {

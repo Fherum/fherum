@@ -41,6 +41,10 @@ contract Market is AccessControl, ReentrancyGuard {
     uint256 internal constant MIN_CLOSE_WAD = 0.01e18;
     uint256 internal constant MAX_RESERVE_FACTOR_WAD = 0.5e18;
     uint256 internal constant MAX_DUST_WAD = 1000e18;
+    /// @dev Target Health Factor bounds for liquidation sizing (brief 6.10). Must stay above 1 WAD.
+    uint256 internal constant MIN_TARGET_HF_WAD = 1.01e18;
+    uint256 internal constant MAX_TARGET_HF_WAD = 2e18;
+    uint256 internal constant DEFAULT_TARGET_HF_WAD = 1.05e18;
 
     struct MarketConfig {
         address governor;
@@ -103,6 +107,8 @@ contract Market is AccessControl, ReentrancyGuard {
     ReserveAccounting.Reserve public reserve;
     /// @notice Optional supply/borrow gate. The zero address means the gate is off.
     IEligibilityAdapter public eligibility;
+    /// @notice Health Factor a liquidation aims to restore. Close factor remains an upper bound.
+    uint256 public targetHealthFactorWad;
 
     event Supplied(address indexed user, uint256 assets, uint256 shares);
     event Withdrawn(address indexed user, uint256 assets, uint256 shares);
@@ -124,6 +130,7 @@ contract Market is AccessControl, ReentrancyGuard {
     event RateParamsUpdated(uint256 baseRateWad, uint256 slope1Wad, uint256 slope2Wad, uint256 optimalUtilWad);
     event FeeRecipientUpdated(address indexed feeRecipient);
     event EligibilityUpdated(address indexed eligibility);
+    event TargetHealthFactorUpdated(uint256 targetHealthFactorWad);
     /// @dev Emitted once at construction. `mode` is PrivacyMode.Public (0). Label is the public posture, not a ciphertext claim.
     event PrivacyModeDeclared(uint8 mode, string label);
 
@@ -150,6 +157,7 @@ contract Market is AccessControl, ReentrancyGuard {
     error BadDust();
     error FeeOnTransferNotSupported();
     error NotEligible();
+    error BadTargetHealthFactor();
 
     /// @dev Blocks borrow, collateral withdrawal, and liquidation while the risk pause is on.
     ///      Repay does not use this modifier. Supply and borrow-asset withdrawal do not either.
@@ -164,8 +172,8 @@ contract Market is AccessControl, ReentrancyGuard {
             cfg.governor == address(0) || cfg.curator == address(0) || cfg.feeRecipient == address(0)
                 || address(cfg.hub) == address(0) || cfg.collateralAsset == address(0) || cfg.borrowAsset == address(0)
                 || address(cfg.oracle) == address(0) || address(cfg.interestRateModel) == address(0)
-                || address(cfg.emergency) == address(0) || address(cfg.fhe) == address(0) || address(cfg.risk) == address(0)
-                || address(cfg.liquidationEngine) == address(0)
+                || address(cfg.emergency) == address(0) || address(cfg.fhe) == address(0)
+                || address(cfg.risk) == address(0) || address(cfg.liquidationEngine) == address(0)
         ) revert ZeroAddress();
         if (cfg.collateralAsset == cfg.borrowAsset) revert AssetsMustDiffer();
 
@@ -203,6 +211,7 @@ contract Market is AccessControl, ReentrancyGuard {
         if (block.timestamp > type(uint40).max) revert BadDust();
         reserve.lastAccrual = uint40(block.timestamp);
 
+        _setTargetHf(DEFAULT_TARGET_HF_WAD);
         eligibility = cfg.eligibility;
         emit EligibilityUpdated(address(cfg.eligibility));
         emit PrivacyModeDeclared(uint8(PrivacyMode.Public), "public");
@@ -330,7 +339,8 @@ contract Market is AccessControl, ReentrancyGuard {
     }
 
     /// @notice Permissionless liquidation of a position whose Health Factor is below 1.
-    /// @dev Blocked while paused and when either oracle is stale. Seize value cannot exceed repaid value times bonus.
+    /// @dev Repay is sized toward `targetHealthFactorWad`, capped by close factor and collateral (LiquidationEngine).
+    ///      Blocked while paused and when either oracle is stale, deviating, or closed. Seize value cannot exceed repaid value times bonus.
     function liquidate(address borrower, uint256 repayRequested) external nonReentrant whenRiskAllowed accrued {
         _requireFreshOracles();
         if (borrower == address(0)) revert ZeroAddress();
@@ -417,7 +427,9 @@ contract Market is AccessControl, ReentrancyGuard {
                 debtPriceWadPerWhole: debtPrice,
                 collateralPriceWadPerWhole: collateralPrice,
                 debtDecimals: debtDecimals,
-                collateralDecimals: collateralDecimals
+                collateralDecimals: collateralDecimals,
+                liquidationThresholdWad: liquidationThresholdWad,
+                targetHealthFactorWad: targetHealthFactorWad
             })
         );
         return q.repayAssets;
@@ -455,6 +467,11 @@ contract Market is AccessControl, ReentrancyGuard {
         onlyRole(CURATOR_ROLE)
     {
         _setRates(baseRate, slope1, slope2, optimalUtil);
+    }
+
+    /// @notice Curator (timelocked on factory markets) sets the liquidation target HF within hard bounds.
+    function setTargetHealthFactor(uint256 target) external onlyRole(CURATOR_ROLE) {
+        _setTargetHf(target);
     }
 
     function setFeeRecipient(address recipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -732,9 +749,13 @@ contract Market is AccessControl, ReentrancyGuard {
         emit RiskParamsUpdated(ltv, liquidationThreshold, bonus, closeFactor, reserveFactor, dust);
     }
 
-    function _setCaps(uint256 supplyCap, uint256 borrowCap, uint256 walletSupplyCap, uint256 walletBorrowCap)
-        internal
-    {
+    function _setTargetHf(uint256 target) internal {
+        if (target < MIN_TARGET_HF_WAD || target > MAX_TARGET_HF_WAD) revert BadTargetHealthFactor();
+        targetHealthFactorWad = target;
+        emit TargetHealthFactorUpdated(target);
+    }
+
+    function _setCaps(uint256 supplyCap, uint256 borrowCap, uint256 walletSupplyCap, uint256 walletBorrowCap) internal {
         caps = Caps.Limits({
             supplyCap: supplyCap,
             borrowCap: borrowCap,
@@ -746,10 +767,7 @@ contract Market is AccessControl, ReentrancyGuard {
 
     function _setRates(uint256 baseRate, uint256 slope1, uint256 slope2, uint256 optimalUtil) internal {
         InterestRateModel.RateParams memory params = InterestRateModel.RateParams({
-            baseRateWad: baseRate,
-            slope1Wad: slope1,
-            slope2Wad: slope2,
-            optimalUtilWad: optimalUtil
+            baseRateWad: baseRate, slope1Wad: slope1, slope2Wad: slope2, optimalUtilWad: optimalUtil
         });
         interestRateModel.validate(params);
         rateParams = params;

@@ -29,7 +29,7 @@ export default function Settings() {
         <Panel title="Privacy">
           <div className="p-5 grid gap-3 text-sm">
             <p className="text-ink">Decrypt requests: none</p>
-            <p className="text-mute text-xs leading-relaxed">{FHE_STATUS} When confidential mode ships, every decryption you authorize will be listed here and revocable.</p>
+            <p className="text-mute text-xs leading-relaxed">{FHE_STATUS} If FHE privacy mode ships, every decryption you authorize would be listed here and revocable.</p>
           </div>
         </Panel>
         <Panel title="Display">

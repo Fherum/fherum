@@ -16,19 +16,50 @@ export const CHAINS = {
 } as const;
 
 export const TARGET_CHAIN = CHAINS.testnet;
+export type NetKey = keyof typeof CHAINS;
 
-/** null = not deployed. The UI must render empty states, never sample data. */
-export const DEPLOYMENT: {
+/** Per-network contract config. null = not deployed: the UI must render empty states, never sample data. */
+export type NetConfig = {
   lensReader: `0x${string}` | null;
   marketFactory: `0x${string}` | null;
+  markets: `0x${string}`[];
   explorer: string | null;
-} = {
-  lensReader: (process.env.NEXT_PUBLIC_LENS_READER as `0x${string}`) || null,
-  marketFactory: (process.env.NEXT_PUBLIC_MARKET_FACTORY as `0x${string}`) || null,
-  explorer: process.env.NEXT_PUBLIC_EXPLORER || null,
 };
 
-export const isDeployed = () => DEPLOYMENT.lensReader !== null;
+const addr = (v?: string) => (v && /^0x[0-9a-fA-F]{40}$/.test(v.trim()) ? (v.trim() as `0x${string}`) : null);
+const addrList = (v?: string) => (v || "").split(",").map((s) => addr(s)).filter((s): s is `0x${string}` => s !== null);
+
+// NEXT_PUBLIC_* must be referenced literally so Next inlines them into client bundles.
+export const NET_CONFIG: Record<NetKey, NetConfig> = {
+  testnet: {
+    lensReader: addr(process.env.NEXT_PUBLIC_LENS_READER),
+    marketFactory: addr(process.env.NEXT_PUBLIC_MARKET_FACTORY),
+    markets: addrList(process.env.NEXT_PUBLIC_MARKETS),
+    explorer: process.env.NEXT_PUBLIC_EXPLORER || null,
+  },
+  mainnet: {
+    lensReader: addr(process.env.NEXT_PUBLIC_MAINNET_LENS_READER),
+    marketFactory: addr(process.env.NEXT_PUBLIC_MAINNET_MARKET_FACTORY),
+    markets: addrList(process.env.NEXT_PUBLIC_MAINNET_MARKETS),
+    explorer: process.env.NEXT_PUBLIC_MAINNET_EXPLORER || null,
+  },
+};
+
+/** Mainnet is only offered when its whole deployment is configured. Unset → app stays testnet-only. */
+export const MAINNET_ENABLED = (() => {
+  const c = NET_CONFIG.mainnet;
+  return !!(c.lensReader && c.marketFactory && c.markets.length && c.explorer);
+})();
+export const ENABLED_NETS: NetKey[] = MAINNET_ENABLED ? ["testnet", "mainnet"] : ["testnet"];
+
+/** Set NEXT_PUBLIC_AUDITED=true only after a published audit of the deployed contracts. */
+export const AUDITED = process.env.NEXT_PUBLIC_AUDITED === "true";
+
+/** Back-compat: testnet config. Prefer NET_CONFIG[net]. */
+export const DEPLOYMENT = NET_CONFIG.testnet;
+
+export const isDeployed = (net: NetKey = "testnet") =>
+  NET_CONFIG[net].lensReader !== null && (net === "testnet" || MAINNET_ENABLED);
 
 /** Privacy mode shipping today. README: "privacyMode is Public on every market. There is no setter." */
 export const PRIVACY_MODE = "Public" as const;
@@ -100,7 +131,7 @@ export const STACK: {
 export const STATUS_LABEL: Record<ModuleStatus, string> = {
   "in-repo": "Deployed on testnet · mainnet pending",
   "public-mode": "Runs on public values",
-  "awaiting-vendor": "Confidential mode awaiting vendor",
+  "awaiting-vendor": "FHE privacy mode planned · awaiting vendor",
 };
 
 /** Roles (README → Roles). Used by the curator console permission matrix. */

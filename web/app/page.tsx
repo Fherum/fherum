@@ -40,14 +40,14 @@ export default function Landing() {
         </div>
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-b from-transparent to-bg" />
         <div className="relative h-full md:mx-[14%] px-5 md:px-10 flex flex-col">
-          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">Encrypted money markets · Robinhood Chain</span></div>
+          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span></div>
           <h1 className="mt-auto font-stencil uppercase text-ink leading-[0.86] tracking-[-0.005em] text-[clamp(44px,6.4vw,112px)]">
-            <span className="block"><span className="text-bronze">Private</span> borrower positions.</span>
+            <span className="block"><span className="text-bronze">Private</span> positions, by design.</span>
             <span className="block md:text-right text-ink/40"><span className="text-bronze">Public</span> market accountability.</span>
           </h1>
           <div className="relative mt-10 mb-8 grid gap-6">
             <div className="flex flex-wrap items-end justify-between gap-6">
-              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-powered confidential lending architecture for Robinhood Chain. Collateral, debt and health factor are designed to stay ciphertext once FHE ships — every market stays auditable. Testnet runs a simulated adapter.</p>
+              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-ready lending architecture for Robinhood Chain. Positions are public today; collateral, debt and health factor are designed to become ciphertext once FHE supports this chain — every market stays auditable. Testnet runs a simulated adapter.</p>
               <div className="flex gap-3">
                 <Link href="/app" className="h-12 px-5 inline-flex items-center bg-bronze text-black font-mono text-xs uppercase hover:brightness-110">{live ? "Launch app" : "Preview app"} →</Link>
                 <a href="#problem" className="h-12 px-5 inline-flex items-center border border-line-2 text-ink font-mono text-xs uppercase hover:border-bronze hover:text-bronze">Why</a>
@@ -59,7 +59,7 @@ export default function Landing() {
       </section>
 
       <div style={{ background: MOLTEN, color: INK }}>
-        <Marquee items={["VEILBOOK · confidential positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
+        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
       </div>
 
       {/* PROBLEM — deep steel field with glyph rain + scroll-stacked cards */}
@@ -79,7 +79,7 @@ export default function Landing() {
           <div>
             <p className="font-mono text-xs uppercase">§02 — Veilbook</p>
             <h2 className="font-stencil uppercase text-6xl md:text-8xl leading-[0.85] mt-4">Ciphertext<br />in. Solvency<br /><span className="bg-[#ff5a1f] px-2">out.</span></h2>
-            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[#3a2e24]">Encrypt the borrower, not the market. Toggle the view to see what an observer would get once confidential mode ships.</p>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[#3a2e24]">The design encrypts the borrower, not the market. Toggle the view to see what an observer would get once FHE privacy mode ships — today every field is public.</p>
             <div className="mt-8 bg-[#050404] text-[#e9e4d8] p-1 shadow-[10px_10px_0_#ff5a1f]"><VeilDemo /></div>
           </div>
           <div className="border-2 border-[#120c08] bg-[#e9e4d8] shadow-[10px_10px_0_#120c08] self-start">
@@ -137,8 +137,8 @@ export default function Landing() {
       <footer className="bg-[#ff5a1f] text-black">
         <SlideLine dir={-1} className="font-stencil uppercase text-[26vw] leading-[0.78] pt-6">FHERUM FHERUM</SlideLine>
         <div className="px-5 md:px-8 py-8 grid md:grid-cols-[1fr_auto] gap-6 font-mono text-[11px] uppercase border-t-2 border-black">
-          <p className="max-w-lg normal-case text-xs leading-relaxed">Encrypted money markets. Tokenized stock tokens are debt instruments providing economic exposure, not direct share ownership. Docs, explorer, GitHub, risk disclosure and terms ship with the testnet.</p>
-          <Link href="/app" className="underline underline-offset-4">App preview →</Link>
+          <p className="max-w-lg normal-case text-xs leading-relaxed">FHE-ready money markets. Positions are public today. Tokenized stock tokens are debt instruments providing economic exposure, not direct share ownership. Not audited unless stated; not investment advice.</p>
+          <span className="flex gap-6"><Link href="/risk" className="underline underline-offset-4">Risk disclosure</Link><Link href="/app" className="underline underline-offset-4">App preview →</Link></span>
         </div>
       </footer>
     </div>

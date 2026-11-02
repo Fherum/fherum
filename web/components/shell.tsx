@@ -27,6 +27,18 @@ function LiveNote() {
   return <>{live ? `Reading LensReader · ${chain.name}` : `${chain.name}: not deployed — nothing below is live data`}</>;
 }
 
+function PrivacyNote() {
+  const { mainnet } = useNet();
+  return (
+    <div className="mx-3 mt-6 mb-3 border border-warn/40 p-3 grid gap-1.5">
+      <p className="font-mono text-[10px] uppercase text-warn">▲ {mainnet ? "Public mode" : "Privacy mode · Public"}</p>
+      <p className="text-xs leading-relaxed text-ink-2">{mainnet
+        ? "Positions are visible on-chain. FHE privacy mode is planned."
+        : "No FHE provider serves this chain yet. Amounts you enter are visible on chain; encryption is simulated."}</p>
+    </div>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -50,10 +62,8 @@ function Shell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <div className="mx-3 mt-6 mb-6 border border-warn/40 p-3 grid gap-1.5">
-            <p className="font-mono text-[10px] uppercase text-warn">▲ Privacy mode · Public</p>
-            <p className="text-xs leading-relaxed text-ink-2">No FHE provider serves this chain yet. Amounts you enter are visible on chain.</p>
-          </div>
+          <PrivacyNote />
+          <Link href="/risk" className="mx-3 mb-6 block font-mono text-[10px] uppercase text-mute hover:text-bronze">Risk disclosure →</Link>
         </aside>
 
         <div className="min-w-0 flex flex-col">

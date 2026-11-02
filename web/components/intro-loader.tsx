@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
    Shown once per browser session; click / any key skips; reduced motion = short fade. */
 const KEY = "fherum.intro";
 const HEX = "0123456789abcdef";
-const STEPS = ["heating the mould", "encrypting position", "sealing ciphertext", "opening the foundry"];
+const STEPS = ["heating the mould", "pouring the position", "setting the cast", "opening the foundry"];
 const rhex = (n: number) => Array.from({ length: n }, () => HEX[(Math.random() * 16) | 0]).join("");
 
 export function IntroLoader() {

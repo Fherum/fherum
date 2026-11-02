@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { CHAINS } from "@/lib/protocol";
+import { CHAINS, ENABLED_NETS } from "@/lib/protocol";
 import { useNet, useNetwork } from "@/components/network-context";
 import { DEPLOYMENTS } from "@/lib/deployments";
 import { NetDropdown, type NetItem } from "@/components/net-dropdown";
@@ -123,12 +123,12 @@ export function WalletButton() {
 }
 
 /** App network selector. Picking a network repoints the whole app (cookie → server re-render).
- *  Mainnet is selectable to inspect; it shows "not deployed" until contracts ship. */
+ *  Mainnet is listed only when NEXT_PUBLIC_MAINNET_* is configured (lib/protocol ENABLED_NETS). */
 export function NetworkSwitch() {
   const { w, switchChain } = useWallet();
   const { net, setNet } = useNetwork();
   const walletChain = w.status === "connected" ? w.chainId : null;
-  const items: NetItem[] = (["testnet"] as const).map((k) => {
+  const items: NetItem[] = ENABLED_NETS.map((k) => {
     const c = CHAINS[k], live = DEPLOYMENTS[k].contracts.length > 0;
     const needsSwitch = k === net && walletChain !== null && walletChain !== c.id;
     return {

@@ -1,6 +1,8 @@
 // Public deployment manifest per network. Addresses are copied from
 // broadcast/DeployTestnetMocks.s.sol/46630/run-latest.json (+ ForgeAdmin.registry()/timelock() reads).
 // Contract addresses are public data; no keys or RPC secrets belong here.
+// Mainnet entries come only from NEXT_PUBLIC_MAINNET_* env (see .env.example); nothing is hardcoded.
+import { MAINNET_ENABLED, NET_CONFIG } from "@/lib/protocol";
 
 export type NetworkKey = "testnet" | "mainnet";
 export type ContractEntry = { name: string; module: string; role: string; address: `0x${string}`; mock?: boolean };
@@ -43,8 +45,14 @@ export const DEPLOYMENTS: Record<NetworkKey, Deployment> = {
     key: "mainnet",
     label: "Robinhood Chain",
     chainId: 4663,
-    explorer: null,
-    contracts: [],
+    explorer: MAINNET_ENABLED ? NET_CONFIG.mainnet.explorer : null,
+    contracts: MAINNET_ENABLED
+      ? [
+          { name: "MarketFactory", module: "FORGEHUB", role: "Verifies and registers markets", address: NET_CONFIG.mainnet.marketFactory! },
+          ...NET_CONFIG.mainnet.markets.map((a, i) => ({ name: `Market ${i + 1}`, module: "FORGEHUB", role: "Isolated spoke market", address: a })),
+          { name: "LensReader", module: "STEEL LENS", role: "Read-only market and user snapshots", address: NET_CONFIG.mainnet.lensReader! },
+        ]
+      : [],
   },
 };
 

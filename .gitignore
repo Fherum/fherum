@@ -4,3 +4,6 @@ broadcast/
 .slither/
 lcov.info
 .DS_Store
+
+# Local anvil broadcast artifacts
+broadcast/*/31337/

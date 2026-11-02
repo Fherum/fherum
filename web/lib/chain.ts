@@ -1,11 +1,15 @@
 import "server-only";
 import { createPublicClient, http, isAddress, parseAbi, type Address } from "viem";
-import { DEPLOYMENT, TARGET_CHAIN } from "@/lib/protocol";
+import { CHAINS, NET_CONFIG, type NetKey } from "@/lib/protocol";
 
-// Server-only reads. RPC_URL may contain a provider key (Alchemy), so it is never NEXT_PUBLIC.
-const client = createPublicClient({
-  transport: http(process.env.RPC_URL || TARGET_CHAIN.rpc, { timeout: 10_000, retryCount: 1 }),
-});
+// Server-only reads. RPC_URL / MAINNET_RPC_URL may contain a provider key (Alchemy), so they are never NEXT_PUBLIC.
+const RPC: Record<NetKey, string> = {
+  testnet: process.env.RPC_URL || CHAINS.testnet.rpc,
+  mainnet: process.env.MAINNET_RPC_URL || CHAINS.mainnet.rpc,
+};
+const clients: Partial<Record<NetKey, ReturnType<typeof createPublicClient>>> = {};
+const clientFor = (net: NetKey) =>
+  (clients[net] ??= createPublicClient({ transport: http(RPC[net], { timeout: 10_000, retryCount: 1 }) }));
 
 const lensAbi = parseAbi([
   "struct MarketSnapshot { uint256 totalSupplyAssets; uint256 totalDebtAssets; uint256 totalSupplyShares; uint256 totalBorrowShares; uint256 totalCollateral; uint256 availableLiquidity; uint256 utilizationWad; uint256 borrowRatePerYearWad; uint256 supplyRatePerYearWad; uint256 supplyCap; uint256 borrowCap; uint256 walletSupplyCap; uint256 walletBorrowCap; uint256 ltvWad; uint256 liquidationThresholdWad; uint256 liquidationBonusWad; uint256 closeFactorWad; uint256 reserveFactorWad; uint256 dustValueWad; uint256 supplyIndex; uint256 borrowIndex; bool paused; bool borrowPaused; bool removeCollateralPaused; bool liquidationPaused; bool repayPaused; uint8 privacyMode; address eligibility; }",
@@ -40,13 +44,12 @@ export type MarketView = {
   curator: Address;
 };
 
-/** Market list comes from env (NEXT_PUBLIC_MARKETS, comma separated) — the registry has no enumeration. */
-export const MARKETS: Address[] = (process.env.NEXT_PUBLIC_MARKETS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter((s): s is Address => isAddress(s));
+/** Market list comes from env (NEXT_PUBLIC_[MAINNET_]MARKETS, comma separated) — the registry has no enumeration. */
+export const marketsFor = (net: NetKey): Address[] => NET_CONFIG[net].markets.filter((s) => isAddress(s));
+/** Testnet list (back-compat). */
+export const MARKETS: Address[] = marketsFor("testnet");
 
-async function token(address: Address): Promise<Token> {
+async function token(client: ReturnType<typeof createPublicClient>, address: Address): Promise<Token> {
   const [symbol, decimals] = await Promise.all([
     client.readContract({ address, abi: erc20Abi, functionName: "symbol" }),
     client.readContract({ address, abi: erc20Abi, functionName: "decimals" }),
@@ -54,8 +57,9 @@ async function token(address: Address): Promise<Token> {
   return { address, symbol, decimals };
 }
 
-export async function readMarket(market: Address): Promise<MarketView> {
-  const lens = DEPLOYMENT.lensReader;
+export async function readMarket(market: Address, net: NetKey = "testnet"): Promise<MarketView> {
+  const client = clientFor(net);
+  const lens = NET_CONFIG[net].lensReader;
   if (!lens) throw new Error("LensReader not configured");
   const [snap, col, bor, oracle, curator] = await Promise.all([
     client.readContract({ address: lens, abi: lensAbi, functionName: "snapshot", args: [market] }),
@@ -64,14 +68,14 @@ export async function readMarket(market: Address): Promise<MarketView> {
     client.readContract({ address: market, abi: marketAbi, functionName: "oracle" }),
     client.readContract({ address: market, abi: marketAbi, functionName: "initialCurator" }),
   ]);
-  const [collateral, loan] = await Promise.all([token(col), token(bor)]);
+  const [collateral, loan] = await Promise.all([token(client, col), token(client, bor)]);
   return { address: market, snap: snap as Snapshot, collateral, loan, oracle, curator };
 }
 
 /** Returns the market or an error message — never throws into the page. */
-export async function tryReadMarket(market: Address): Promise<{ ok: true; m: MarketView } | { ok: false; error: string }> {
+export async function tryReadMarket(market: Address, net: NetKey = "testnet"): Promise<{ ok: true; m: MarketView } | { ok: false; error: string }> {
   try {
-    return { ok: true, m: await readMarket(market) };
+    return { ok: true, m: await readMarket(market, net) };
   } catch (e) {
     const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
     return { ok: false, error: msg.slice(0, 160) };

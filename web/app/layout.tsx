@@ -10,9 +10,9 @@ const display = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["n
 const stencil = Big_Shoulders({ subsets: ["latin"], weight: ["800", "900"], variable: "--font-stencil" });
 
 export const metadata: Metadata = {
-  title: "FHERUM — Encrypted money markets",
+  title: "FHERUM — FHE-ready money markets",
   description:
-    "FHERUM is building an FHE-powered confidential money market on Robinhood Chain: curated lending with public market accountability.",
+    "FHERUM is building FHE-ready money markets on Robinhood Chain: curated lending with public market accountability. Positions are public today; FHE privacy mode is planned.",
   icons: { icon: "/brand/mark-96.png" },
 };
 

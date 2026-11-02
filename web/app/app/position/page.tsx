@@ -2,20 +2,22 @@ import { PageHead } from "@/components/shell";
 import { Empty, Panel, Tag } from "@/components/ui";
 import Link from "next/link";
 import { FIELDS } from "@/lib/protocol";
-import { MARKETS } from "@/lib/chain";
+import { Suspense } from "react";
+import { marketsFor } from "@/lib/chain";
+import { getNet } from "@/lib/net-server";
 
 const LEGEND = [
   ["ok", "Confirmed", "Read from chain at a known block."],
   ["warn", "Pending", "Transaction sent, not yet final."],
   ["mute", "Estimated", "Computed locally; interest keeps accruing."],
-  ["bronze", "Encrypted", "Ciphertext handle; only you can request decryption."],
+  ["bronze", "Encrypted · planned", "Not used yet. With FHE privacy mode, a field would be a ciphertext handle only you can decrypt."],
 ] as const;
 
 export default function Position() {
   return (
     <>
       <PageHead eyebrow="Veilbook" title="Position">
-        Only your connected wallet sees this page. Today every value here is also readable on chain; the encrypted state arrives with confidential mode.
+        Public mode: every value here is readable on chain by anyone, like Aave or Compound. FHE privacy mode is planned, not live.
       </PageHead>
       <div className="grid xl:grid-cols-[1fr_380px] gap-4 items-start">
         <div className="grid gap-4">
@@ -44,12 +46,18 @@ export default function Position() {
         <Panel title="Act on a market">
           <div className="p-5 grid gap-3 text-sm">
             <p className="text-ink-2">Supply, borrow, repay and withdraw from the market page. Each action reads your wallet balance and position live.</p>
-            {MARKETS.length
-              ? MARKETS.map((m) => <Link key={m} href={`/app/markets/${m}`} className="font-mono text-xs text-bronze hover:underline break-all">Open market {m.slice(0, 6)}…{m.slice(-4)} →</Link>)
-              : <p className="text-mute text-xs">No market is deployed on this network yet.</p>}
+            <Suspense fallback={<p className="text-mute text-xs">Loading markets…</p>}><MarketLinks /></Suspense>
           </div>
         </Panel>
       </div>
     </>
   );
+}
+
+async function MarketLinks() {
+  const { net, live } = await getNet();
+  const list = live ? marketsFor(net) : [];
+  return list.length
+    ? <>{list.map((m) => <Link key={m} href={`/app/markets/${m}`} className="font-mono text-xs text-bronze hover:underline break-all">Open market {m.slice(0, 6)}…{m.slice(-4)} →</Link>)}</>
+    : <p className="text-mute text-xs">No market is deployed on this network yet.</p>;
 }

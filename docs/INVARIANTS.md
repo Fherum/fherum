@@ -67,6 +67,12 @@ Pause blocks borrow, collateral withdrawal, and liquidation. It does not block r
 
 Liquidation requires Health Factor below 1, a fresh oracle, and a liquidator other than the borrower. Repay size is capped by the close factor unless debt value is under the dust value, and by the collateral that can cover the bonus. Seize value uses floor rounding and must satisfy `seizeValue * WAD <= repayValue * bonusWad`. Bonus is a multiplier: `1.05e18` is 5% extra collateral value, and the hard max is `1.15e18`.
 
+## Liquidation target, fees, oracle-free paths
+
+- **Post-liquidation HF.** After a liquidation, the Health Factor is at least `targetHealthFactorWad`, unless the repay was capped by the close factor, by the collateral available for the bonus, or by full or dust repayment. Tested by `invariant_postLiquidationHfAtLeastTargetUnlessCapped` (handler `liquidateMax`) and the unit tests in `LiquidationAdversarial.t.sol`.
+- **Fee ledgers.** `FeeController.protocolShares + curatorShares <= market.supplyShares(feeController)` at all times. Tested by `invariant_feeLedgersWithinHeldShares`, and enforced on-chain by the `ShareAccountingMismatch` checks.
+- **Oracle-free paths.** `repay` and `addCollateral` never read the oracle. Both succeed with stale feeds. Tested by `invariant_repayAndAddCollateralOracleFree` (handler `staleOracleRepayAddCollateral`).
+
 ## What is tested
 
 Foundry unit tests cover the formulas, oracle failures, pause, caps, credit isolation, the 1.6 Health Factor example, a one-year accrual vector, and bonus-exact liquidation. Fuzz tests cover a non-decreasing rate, non-decreasing indexes, 512-bit products, value round-trips, liquidation quotes, and borrow/withdraw Health Factor. Invariant tests replay supply, withdraw, collateral, borrow, repay, liquidation, time, and pause.

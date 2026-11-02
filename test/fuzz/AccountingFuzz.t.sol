@@ -100,7 +100,9 @@ contract AccountingFuzzTest is Test {
                 debtPriceWadPerWhole: debtPriceWad,
                 collateralPriceWadPerWhole: collPriceWad,
                 debtDecimals: 18,
-                collateralDecimals: 18
+                collateralDecimals: 18,
+                liquidationThresholdWad: 0.85e18,
+                targetHealthFactorWad: 1.05e18
             })
         ) returns (
             LiquidationEngine.Quote memory q

@@ -6,6 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {EmergencyController} from "../../src/EmergencyController.sol";
 import {LiquidityHub} from "../../src/LiquidityHub.sol";
 import {Market} from "../../src/Market.sol";
+import {FeeController} from "../../src/FeeController.sol";
 import {Math512} from "../../src/libraries/Math512.sol";
 import {ValueMath} from "../../src/libraries/ValueMath.sol";
 import {MockAggregatorV3} from "../mocks/MockAggregatorV3.sol";
@@ -26,6 +27,11 @@ contract Handler is Test {
 
     uint256 public lastBorrowIndex;
     uint256 public lastSupplyIndex;
+    FeeController public feeController;
+    /// @dev Ghost counters for the INVARIANTS.md post-liquidation and oracle-free claims.
+    uint256 public ghostTargetViolations;
+    uint256 public ghostFullLiquidations;
+    uint256 public ghostOracleFreeFailures;
 
     constructor(
         Market market_,
@@ -154,6 +160,78 @@ contract Handler is Test {
             assertTrue(Math512.mulGte(repayValue, market.liquidationBonusWad(), seizeValue, 1e18));
         } catch {}
         collateralFeed.setAnswer(1e8);
+        _after();
+    }
+
+    function setFeeController(FeeController fc) external {
+        require(address(feeController) == address(0), "set");
+        feeController = fc;
+    }
+
+    /// @dev Max-request liquidation: afterwards HF >= target unless a cap bound (close factor, collateral
+    ///      exhausted, or debt fully repaid / dust rule).
+    function liquidateMax(uint256 seed) external {
+        _fresh();
+        address user = _actor(seed);
+        uint256 debt = market.debtAssets(user);
+        if (debt == 0) {
+            _after();
+            return;
+        }
+        // Push HF to ~0.95 so the position is liquidatable but the target is usually reachable.
+        // A fixed 50% drop left most positions above HF 1 and made this handler vacuous.
+        uint256 hf0 = market.healthFactorWad(user);
+        int256 px = int256(uint256(1e8) * 0.95e18 / hf0);
+        collateralFeed.setAnswer(px > 0 ? px : int256(1));
+        uint256 debtBefore = market.debtAssets(user);
+        uint256 closeCap = debtBefore * market.closeFactorWad() / 1e18;
+        vm.prank(liquidator);
+        try market.liquidate(user, type(uint128).max) {
+            ghostFullLiquidations++;
+            uint256 debtAfter = market.debtAssets(user);
+            uint256 repaid = debtBefore - debtAfter;
+            bool capped = repaid + 2 >= closeCap || market.collateralAssets(user) == 0 || debtAfter == 0;
+            if (!capped) {
+                uint256 hf = market.healthFactorWad(user);
+                // 1e-9 relative tolerance for share rounding.
+                if (hf + market.targetHealthFactorWad() / 1e9 < market.targetHealthFactorWad()) {
+                    ghostTargetViolations++;
+                }
+            }
+        } catch {}
+        collateralFeed.setAnswer(1e8);
+        _after();
+    }
+
+    /// @dev Both feeds stale (and a garbage answer): repay and addCollateral must still succeed.
+    function staleOracleRepayAddCollateral(uint256 seed, uint256 amount) external {
+        address user = _actor(seed);
+        vm.warp(block.timestamp + 2 days);
+        borrowFeed.setUpdatedAt(1);
+        collateralFeed.setUpdatedAt(1);
+        vm.prank(user);
+        try market.addCollateral(1e15) {}
+        catch {
+            ghostOracleFreeFailures++;
+        }
+        uint256 debt = market.debtAssets(user);
+        if (debt > 1) {
+            amount = bound(amount, 1, debt);
+            vm.prank(user);
+            try market.repay(user, amount) {}
+            catch (bytes memory reason) {
+                // RepayTooSmall/NoDebt are amount-rounding rejections, not oracle reads.
+                bytes4 sel = bytes4(reason);
+                if (sel != Market.RepayTooSmall.selector && sel != Market.NoDebt.selector) ghostOracleFreeFailures++;
+            }
+        }
+        _fresh();
+        _after();
+    }
+
+    function distributeFees() external {
+        _fresh();
+        if (address(feeController) != address(0)) feeController.distribute();
         _after();
     }
 

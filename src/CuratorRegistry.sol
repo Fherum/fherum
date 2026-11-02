@@ -5,6 +5,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IEligibilityAdapter} from "./interfaces/IEligibilityAdapter.sol";
+import {FeeController} from "./FeeController.sol";
 import {Market} from "./Market.sol";
 
 /// @title CuratorRegistry
@@ -65,8 +66,9 @@ contract CuratorRegistry is AccessControl, ReentrancyGuard {
         uint256 reserveFactor,
         uint256 dust
     ) external onlyRole(CURATOR_ROLE) returns (bytes32 id) {
-        bytes memory data =
-            abi.encodeCall(Market.setRiskParams, (ltv, liquidationThreshold, bonus, closeFactor, reserveFactor, dust));
+        bytes memory data = abi.encodeCall(
+            Market.setRiskParams, (ltv, liquidationThreshold, bonus, closeFactor, reserveFactor, dust)
+        );
         id = _queue(market, data);
     }
 
@@ -110,6 +112,41 @@ contract CuratorRegistry is AccessControl, ReentrancyGuard {
         id = _queue(market, data);
     }
 
+    /// @notice Curator path for the liquidation target Health Factor (Market enforces hard bounds).
+    function queueTargetHealthFactor(address market, uint256 target)
+        external
+        onlyRole(CURATOR_ROLE)
+        returns (bytes32 id)
+    {
+        id = _queue(market, abi.encodeCall(Market.setTargetHealthFactor, (target)));
+    }
+
+    /// @notice Admin path for the curator share of the reserve fee. FeeController enforces the hard cap.
+    /// @dev The fee controller's own admin must be the timelock. Its market must be registered here.
+    function queueCuratorFeeShare(FeeController controller, uint256 share)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (bytes32 id)
+    {
+        id = _queueTo(
+            address(controller), address(controller.market()), abi.encodeCall(FeeController.setCuratorShare, (share))
+        );
+    }
+
+    /// @notice Admin path for fee destinations.
+    function queueFeeRecipients(FeeController controller, address protocolRecipient, address curatorRecipient)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (bytes32 id)
+    {
+        if (protocolRecipient == address(0) || curatorRecipient == address(0)) revert ZeroAddress();
+        id = _queueTo(
+            address(controller),
+            address(controller.market()),
+            abi.encodeCall(FeeController.setRecipients, (protocolRecipient, curatorRecipient))
+        );
+    }
+
     /// @notice Permissionless after the timelock delay. Reverts while the operation is still waiting.
     function execute(bytes32 id) external nonReentrant {
         Operation memory operation = _operations[id];
@@ -137,13 +174,19 @@ contract CuratorRegistry is AccessControl, ReentrancyGuard {
     }
 
     function _queue(address market, bytes memory data) internal returns (bytes32 id) {
+        id = _queueTo(market, market, data);
+    }
+
+    /// @dev `target` is the call target (market or its fee controller). `market` must be registered.
+    function _queueTo(address target, address market, bytes memory data) internal returns (bytes32 id) {
         if (!isMarket[market]) revert UnknownMarket(market);
+        if (target == address(0)) revert ZeroAddress();
         bytes32 salt = bytes32(nonce);
         nonce = nonce + 1;
-        id = timelock.hashOperation(market, 0, data, bytes32(0), salt);
+        id = timelock.hashOperation(target, 0, data, bytes32(0), salt);
         uint256 delay = timelock.getMinDelay();
-        timelock.schedule(market, 0, data, bytes32(0), salt, delay);
-        _operations[id] = Operation({market: market, salt: salt, data: data});
+        timelock.schedule(target, 0, data, bytes32(0), salt, delay);
+        _operations[id] = Operation({market: target, salt: salt, data: data});
         emit UpdateQueued(id, market, _selector(data), block.timestamp + delay);
     }
 

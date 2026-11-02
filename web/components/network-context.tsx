@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DEPLOYMENTS, type NetworkKey } from "@/lib/deployments";
+import { AUDITED, ENABLED_NETS } from "@/lib/protocol";
 import { NET_COOKIE, netInfo, parseNet } from "@/lib/net";
 import { NetDropdown, type NetItem } from "@/components/net-dropdown";
 
@@ -30,10 +31,10 @@ export const useNetwork = () => useContext(Ctx);
 /** Chain + deployment status for the selected network. */
 export const useNet = () => netInfo(useContext(Ctx).net);
 
-/** Testnet/mainnet dropdown. Mainnet is selectable to inspect; it shows "not deployed" everywhere. */
+/** Network dropdown. Mainnet is listed only when its deployment env is configured; with one item it renders a static badge. */
 export function NetToggle({ className = "" }: { className?: string }) {
   const { net, setNet } = useNetwork();
-  const items: NetItem[] = (["testnet"] as const).map((k) => {
+  const items: NetItem[] = ENABLED_NETS.map((k) => {
     const d = DEPLOYMENTS[k], live = d.contracts.length > 0;
     return { key: k, label: k, chainId: d.chainId, dot: live ? "ok" : "off", note: live ? undefined : "not deployed", hint: d.label };
   });
@@ -44,7 +45,7 @@ export function NetToggle({ className = "" }: { className?: string }) {
 export function NetStatus() {
   const { net } = useNetwork();
   const d = DEPLOYMENTS[net], live = d.contracts.length > 0;
-  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", "Public · FHE pending"], ["Audit", "None yet"]];
+  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", net === "mainnet" ? "Public mode · FHE planned" : "Public · FHE simulated"], ["Audit", AUDITED ? "Audited" : "None yet"]];
   return (
     <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-[#e9e4d8]/20 pt-4 font-mono text-[11px] uppercase pointer-events-auto">
       {rows.map(([k, v]) => (<div key={k} className="flex gap-2"><dt className="text-[#e9e4d8]/45">{k}</dt><dd>{v}</dd></div>))}

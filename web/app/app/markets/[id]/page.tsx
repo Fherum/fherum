@@ -4,7 +4,7 @@ import { PageHead } from "@/components/shell";
 import { Empty, Panel, Tag } from "@/components/ui";
 import { RateCurve } from "@/components/rate-curve";
 import { ActionPanel, type PanelMarket } from "@/components/action-panel";
-import { DEPLOYMENT, FHE_STATUS, HARD_BOUNDS, PRIVACY_MODE } from "@/lib/protocol";
+import { FHE_STATUS, HARD_BOUNDS, NET_CONFIG, PRIVACY_MODE, type NetKey } from "@/lib/protocol";
 import { getNet } from "@/lib/net-server";
 import type { NetInfo } from "@/lib/net";
 import { amt, pct, ray, tryReadMarket, wadNum, type MarketView, type Snapshot } from "@/lib/chain";
@@ -43,8 +43,9 @@ const toPanel = (m: MarketView): PanelMarket => ({
   paused: m.snap.paused, borrowPaused: m.snap.borrowPaused, removeCollateralPaused: m.snap.removeCollateralPaused, repayPaused: m.snap.repayPaused,
 });
 
-function Addr({ a }: { a: string }) {
-  const href = DEPLOYMENT.explorer ? `${DEPLOYMENT.explorer.replace(/\/$/, "")}/address/${a}` : null;
+function Addr({ a, net }: { a: string; net: NetKey }) {
+  const ex = NET_CONFIG[net].explorer;
+  const href = ex ? `${ex.replace(/\/$/, "")}/address/${a}` : null;
   return href
     ? <a href={href} target="_blank" rel="noreferrer" className="break-all hover:text-bronze underline decoration-line-2">{a}</a>
     : <span className="break-all">{a}</span>;
@@ -127,7 +128,9 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
             <div className="p-5 grid gap-3 text-sm">
               <p className="text-xl font-medium leading-none">{m ? (m.snap.privacyMode === 0 ? "Public" : `Mode ${m.snap.privacyMode}`) : PRIVACY_MODE}</p>
               <p className="text-ink-2 leading-relaxed">{FHE_STATUS}</p>
-              <p className="text-xs text-mute">Market aggregates (totals, utilization, rates) stay public in every mode. Only borrower positions are encrypted once FHE is available.</p>
+              <p className="text-xs text-mute">{n.mainnet
+                ? "Public mode · positions are visible on-chain · FHE privacy mode planned. Market aggregates stay public in every mode."
+                : "Market aggregates (totals, utilization, rates) stay public in every mode. Borrower positions are planned to move to FHE once a vendor supports this chain; testnet runs simulated encryption."}</p>
             </div>
           </Panel>
           <Panel title="Hard bounds · enforced in contract">
@@ -151,7 +154,7 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
               ["Curator", m?.curator ?? "—"],
               ["Eligibility", m ? (m.snap.eligibility === ZERO ? "none (open)" : m.snap.eligibility) : "—"],
             ] as [string, string][]).map(([k, v]) => (
-              <p key={k}><span className="text-mute uppercase mr-3 inline-block w-24">{k}</span>{isAddr(v) ? <Addr a={v} /> : v}</p>
+              <p key={k}><span className="text-mute uppercase mr-3 inline-block w-24">{k}</span>{isAddr(v) ? <Addr a={v} net={n.net} /> : v}</p>
             ))}
             {m && <p className="mt-2 text-mute normal-case">Curator is the ForgeAdmin timelock — risk changes wait out its delay.</p>}
           </div>
@@ -163,7 +166,7 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
 }
 
 async function Live({ id, n }: { id: `0x${string}`; n: NetInfo }) {
-  const r = await tryReadMarket(id);
+  const r = await tryReadMarket(id, n.net);
   return r.ok ? <Body id={id} n={n} m={r.m} /> : <Body id={id} n={n} error={r.error} />;
 }
 
@@ -177,7 +180,7 @@ export default async function MarketDetail({ params }: { params: Promise<{ id: s
     <>
       <Link href="/app/markets" className="inline-block mb-6 font-mono text-xs uppercase text-ink-2 hover:text-bronze">← All markets</Link>
       <PageHead eyebrow={`Forgehub · market ${short(id)}`} title="Market"
-        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>Privacy · {PRIVACY_MODE}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? `Deployed · ${n.net}` : "Not deployed"}</Tag></div>}>
+        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>{n.mainnet ? "Public mode · positions visible" : `Privacy · ${PRIVACY_MODE}`}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? `Deployed · ${n.net}` : "Not deployed"}</Tag></div>}>
         One collateral asset, one loan asset, curator-set limits inside contract hard bounds. Every figure below is read from LensReader.snapshot(market) — nothing is shown until that call returns.
       </PageHead>
 

@@ -6,6 +6,7 @@ import {LiquidityHub} from "../../src/LiquidityHub.sol";
 import {PositionManager} from "../../src/PositionManager.sol";
 import {PrivacyMode} from "../../src/types/PrivacyMode.sol";
 import {Handler} from "./Handler.sol";
+import {FeeController} from "../../src/FeeController.sol";
 import {ProtocolFixture} from "../utils/ProtocolFixture.sol";
 
 contract MarketInvariantTest is ProtocolFixture {
@@ -28,7 +29,11 @@ contract MarketInvariantTest is ProtocolFixture {
             bob,
             carol
         );
-        bytes4[] memory selectors = new bytes4[](9);
+        feeController = new FeeController(market, governor, treasury, curator, 0.2e18);
+        vm.prank(governor);
+        market.setFeeRecipient(address(feeController));
+        handler.setFeeController(feeController);
+        bytes4[] memory selectors = new bytes4[](12);
         selectors[0] = handler.supply.selector;
         selectors[1] = handler.withdraw.selector;
         selectors[2] = handler.addCollateral.selector;
@@ -38,6 +43,9 @@ contract MarketInvariantTest is ProtocolFixture {
         selectors[6] = handler.liquidate.selector;
         selectors[7] = handler.warp.selector;
         selectors[8] = handler.pauseRepayUnpause.selector;
+        selectors[9] = handler.liquidateMax.selector;
+        selectors[10] = handler.staleOracleRepayAddCollateral.selector;
+        selectors[11] = handler.distributeFees.selector;
         targetSelector(StdInvariant.FuzzSelector({addr: address(handler), selectors: selectors}));
         targetContract(address(handler));
         excludeContract(address(this));
@@ -54,11 +62,32 @@ contract MarketInvariantTest is ProtocolFixture {
         excludeContract(address(borrowFeed));
         excludeContract(address(collateralFeed));
         excludeContract(address(market.positions()));
+        excludeContract(address(feeController));
+    }
+
+    FeeController internal feeController;
+
+    /// INVARIANTS.md: fee ledgers never exceed the shares the FeeController holds.
+    function invariant_feeLedgersWithinHeldShares() public view {
+        assertLe(
+            feeController.protocolShares() + feeController.curatorShares(),
+            market.supplyShares(address(feeController))
+        );
+    }
+
+    /// INVARIANTS.md: after a max-request liquidation HF >= target unless a cap bound.
+    function invariant_postLiquidationHfAtLeastTargetUnlessCapped() public view {
+        assertEq(handler.ghostTargetViolations(), 0);
+    }
+
+    /// INVARIANTS.md: repay and addCollateral never read the oracle.
+    function invariant_repayAndAddCollateralOracleFree() public view {
+        assertEq(handler.ghostOracleFreeFailures(), 0);
     }
 
     function invariant_supplySharesReconcile() public view {
         uint256 sum = market.supplyShares(alice) + market.supplyShares(bob) + market.supplyShares(carol)
-            + market.supplyShares(treasury);
+            + market.supplyShares(treasury) + market.supplyShares(address(feeController));
         assertEq(market.pendingFeeShares(), 0);
         assertEq(sum, market.totalSupplyShares());
     }
@@ -134,5 +163,16 @@ contract MarketInvariantTest is ProtocolFixture {
             assertEq(p.privacyMode, uint8(PrivacyMode.Public));
             assertEq(p.owner, user);
         }
+    }
+
+    /// @dev Guards against a vacuous pass: the post-liquidation HF invariant only means something if
+    ///      the liquidateMax handler can actually execute a liquidation.
+    function test_liquidateMaxHandlerExecutes() public {
+        handler.supply(1, 1e21);
+        handler.addCollateral(0, 1e21);
+        handler.borrow(0, 4e20);
+        handler.liquidateMax(0);
+        assertEq(handler.ghostFullLiquidations(), 1, "liquidateMax did not liquidate");
+        assertEq(handler.ghostTargetViolations(), 0);
     }
 }

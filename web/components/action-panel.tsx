@@ -23,7 +23,7 @@ export type PanelMarket = {
   repayPaused: boolean;
 };
 
-type Action = "Supply" | "Withdraw" | "Collateral" | "Remove" | "Borrow" | "Repay";
+export type Action = "Supply" | "Withdraw" | "Collateral" | "Remove" | "Borrow" | "Repay";
 const ACTIONS: { key: Action; label: string; asset: "loan" | "collateral" }[] = [
   { key: "Supply", label: "Supply", asset: "loan" },
   { key: "Withdraw", label: "Withdraw", asset: "loan" },
@@ -127,8 +127,10 @@ const fmt = (v: bigint, d: number, dp = 4) => {
 };
 const hfText = (hf: bigint, debt: bigint) => (debt === ZERO ? "∞ (no debt)" : (Number(hf / BigInt(1e14)) / 1e4).toFixed(2));
 
-export function ActionPanel({ market }: { market?: PanelMarket }) {
-  const [a, setA] = useState<Action>("Supply");
+export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Action[] }) {
+  const LIST = only ? ACTIONS.filter((x) => only.includes(x.key)) : ACTIONS;
+  const COLS = LIST.length === 3 || LIST.length > 4 ? 3 : 2;
+  const [a, setA] = useState<Action>(LIST[0].key);
   const [amount, setAmount] = useState("");
   const [pos, setPos] = useState<Pos | null>(null);
   const [stage, setStage] = useState<Stage>("idle");
@@ -258,11 +260,11 @@ export function ActionPanel({ market }: { market?: PanelMarket }) {
 
   return (
     <div className="border border-line bg-s1 min-w-0">
-      <div role="tablist" aria-label="Action" className="grid grid-cols-3 border-b border-line">
-        {ACTIONS.map((x, i) => (
+      <div role="tablist" aria-label="Action" className={`grid ${COLS === 3 ? "grid-cols-3" : "grid-cols-2"} border-b border-line`}>
+        {LIST.map((x, i) => (
           <button key={x.key} role="tab" aria-selected={a === x.key} disabled={busy}
             onClick={() => { setA(x.key); setAmount(""); setStage("idle"); setMsg(null); setTx(null); }}
-            className={`h-11 px-2 text-xs relative border-line ${i % 3 ? "border-l" : ""} ${i < 3 ? "border-b" : ""} ${a === x.key ? "text-ink bg-s2" : "text-mute hover:text-ink-2"}`}>
+            className={`h-11 px-2 text-xs relative border-line ${i % COLS ? "border-l" : ""} ${i < LIST.length - COLS ? "border-b" : ""} ${a === x.key ? "text-ink bg-s2" : "text-mute hover:text-ink-2"}`}>
             {x.label}
             {a === x.key && <span aria-hidden className="absolute inset-x-3 bottom-0 h-px bg-bronze" />}
           </button>

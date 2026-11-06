@@ -47,7 +47,7 @@ export default function Landing() {
           </h1>
           <div className="relative mt-10 mb-8 grid gap-6">
             <div className="flex flex-wrap items-end justify-between gap-6">
-              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-ready lending architecture for Robinhood Chain. Positions are public today; collateral, debt and health factor are designed to become ciphertext once FHE supports this chain — every market stays auditable. Testnet runs a simulated adapter.</p>
+              <p className="max-w-md text-ink-2 text-[15px] leading-relaxed">FHE-ready lending architecture for Robinhood Chain. Positions are public today; collateral, debt and health factor are designed to become ciphertext once FHE supports this chain — every market stays auditable. Live on Robinhood Chain mainnet in public mode · not audited, caps limited.</p>
               <div className="flex gap-3">
                 <Link href="/app" className="h-12 px-5 inline-flex items-center bg-bronze text-black font-mono text-xs uppercase hover:brightness-110">{live ? "Launch app" : "Preview app"} →</Link>
                 <a href="#problem" className="h-12 px-5 inline-flex items-center border border-line-2 text-ink font-mono text-xs uppercase hover:border-bronze hover:text-bronze">Why</a>

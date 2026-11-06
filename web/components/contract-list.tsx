@@ -19,7 +19,7 @@ export function ContractList() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         
         <p className="font-mono text-[11px] uppercase text-[#e9e4d8]/60">
-          {d.label} · {d.contracts.length} contracts{d.explorer ? "" : " · no explorer"}
+          {d.label} · {d.contracts.length} contracts{d.explorer ? "" : " · no explorer"}{d.key === "mainnet" && d.contracts.length ? " · not audited · public mode" : ""}
         </p>
       </div>
 

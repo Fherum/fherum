@@ -2,13 +2,15 @@
 
 import { motion } from "motion/react";
 import { useState } from "react";
-import { STACK, STATUS_LABEL } from "@/lib/protocol";
+import { STACK, STATUS_LABEL, STATUS_LABEL_MAINNET } from "@/lib/protocol";
+import { useNetwork } from "@/components/network-context";
 
 const GLYPH = ["◐", "◆", "⬢", "◎", "⊓", "✕"];
 
 /** Stamped iron dog-tags. Hover to lift, click to stamp-flip. */
 function Tag({ i }: { i: number }) {
   const m = STACK[i]; const [open, setOpen] = useState(false);
+  const { net } = useNetwork(); const LABEL = net === "mainnet" ? STATUS_LABEL_MAINNET : STATUS_LABEL;
   return (
     <motion.button onClick={() => setOpen((o) => !o)} aria-expanded={open}
       initial={{ y: 80, rotate: (i % 2 ? 1 : -1) * 6, opacity: 0 }} whileInView={{ y: 0, rotate: (i % 2 ? 1 : -1) * 1.5, opacity: 1 }}
@@ -31,7 +33,7 @@ function Tag({ i }: { i: number }) {
         </motion.div>
         <div className="mt-auto pt-6 flex items-center justify-between font-mono text-[11px]">
           <span className={`px-2 py-1 ${m.status === "awaiting-vendor" ? "bg-[#ff5a1f] text-[#120c08]" : "bg-[#120c08] text-[#e9e4d8]"}`}>
-            {m.status === "awaiting-vendor" ? "▲ " : "○ "}{STATUS_LABEL[m.status]}
+            {m.status === "awaiting-vendor" ? "▲ " : "○ "}{LABEL[m.status]}
           </span>
           <span>{open ? "− close" : "+ open"}</span>
         </div>

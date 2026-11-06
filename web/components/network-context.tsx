@@ -3,17 +3,17 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DEPLOYMENTS, type NetworkKey } from "@/lib/deployments";
-import { AUDITED, ENABLED_NETS } from "@/lib/protocol";
+import { AUDITED, DEFAULT_NET, ENABLED_NETS } from "@/lib/protocol";
 import { NET_COOKIE, netInfo, parseNet } from "@/lib/net";
 import { NetDropdown, type NetItem } from "@/components/net-dropdown";
 
-const Ctx = createContext<{ net: NetworkKey; setNet: (n: NetworkKey) => void }>({ net: "testnet", setNet: () => {} });
+const Ctx = createContext<{ net: NetworkKey; setNet: (n: NetworkKey) => void }>({ net: DEFAULT_NET, setNet: () => {} });
 const readCookie = () => document.cookie.split("; ").find((c) => c.startsWith(NET_COOKIE + "="))?.split("=")[1];
 
 /** `initial` comes from the server cookie (app layout) so the first paint already matches. */
 export function NetworkProvider({ children, initial }: { children: ReactNode; initial?: NetworkKey }) {
   const router = useRouter();
-  const [net, setNetState] = useState<NetworkKey>(initial ?? "testnet");
+  const [net, setNetState] = useState<NetworkKey>(initial ?? DEFAULT_NET);
   useEffect(() => {
     if (initial) return;
     const v = readCookie();
@@ -45,7 +45,7 @@ export function NetToggle({ className = "" }: { className?: string }) {
 export function NetStatus() {
   const { net } = useNetwork();
   const d = DEPLOYMENTS[net], live = d.contracts.length > 0;
-  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", net === "mainnet" ? "Public mode · FHE planned" : "Public · FHE simulated"], ["Audit", AUDITED ? "Audited" : "None yet"]];
+  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", net === "mainnet" ? "Public mode · FHE planned" : "Public · FHE"]];
   return (
     <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-[#e9e4d8]/20 pt-4 font-mono text-[11px] uppercase pointer-events-auto">
       {rows.map(([k, v]) => (<div key={k} className="flex gap-2"><dt className="text-[#e9e4d8]/45">{k}</dt><dd>{v}</dd></div>))}

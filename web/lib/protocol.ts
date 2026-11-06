@@ -50,7 +50,9 @@ export const MAINNET_ENABLED = (() => {
   const c = NET_CONFIG.mainnet;
   return !!(c.lensReader && c.marketFactory && c.markets.length && c.explorer);
 })();
-export const ENABLED_NETS: NetKey[] = MAINNET_ENABLED ? ["testnet", "mainnet"] : ["testnet"];
+export const ENABLED_NETS: NetKey[] = MAINNET_ENABLED ? ["mainnet", "testnet"] : ["testnet"];
+/** Network shown when the visitor has not picked one: mainnet once it is configured, else testnet. */
+export const DEFAULT_NET: NetKey = MAINNET_ENABLED ? "mainnet" : "testnet";
 
 /** Set NEXT_PUBLIC_AUDITED=true only after a published audit of the deployed contracts. */
 export const AUDITED = process.env.NEXT_PUBLIC_AUDITED === "true";
@@ -75,7 +77,7 @@ export const HARD_BOUNDS = [
   { param: "Timelock delay", rule: "> 0 (ForgeAdmin)" },
 ];
 
-export type ModuleStatus = "in-repo" | "public-mode" | "awaiting-vendor";
+export type ModuleStatus = "in-repo" | "public-mode" | "awaiting-vendor" | "optional";
 
 export const STACK: {
   brand: string;
@@ -117,7 +119,7 @@ export const STACK: {
     role: "Eligibility",
     line: "Optional address-set or Merkle gate on supply and borrow. Off unless a market sets it.",
     contracts: "AllowlistEligibility",
-    status: "in-repo",
+    status: "optional",
   },
   {
     brand: "BREAKGLASS",
@@ -132,6 +134,14 @@ export const STATUS_LABEL: Record<ModuleStatus, string> = {
   "in-repo": "Deployed on testnet · mainnet pending",
   "public-mode": "Runs on public values",
   "awaiting-vendor": "FHE privacy mode planned · awaiting vendor",
+  "optional": "Deployed on testnet · optional",
+};
+/** Mainnet labels: live contracts, not audited; VEILBOOK stays public until FHE ships. */
+export const STATUS_LABEL_MAINNET: Record<ModuleStatus, string> = {
+  "in-repo": "Live on mainnet · not audited",
+  "public-mode": "Live on mainnet · public values",
+  "awaiting-vendor": "Public mode · FHE privacy coming",
+  "optional": "In code · off on mainnet",
 };
 
 /** Roles (README → Roles). Used by the curator console permission matrix. */

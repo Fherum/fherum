@@ -48,9 +48,24 @@ export const DEPLOYMENTS: Record<NetworkKey, Deployment> = {
     explorer: MAINNET_ENABLED ? NET_CONFIG.mainnet.explorer : null,
     contracts: MAINNET_ENABLED
       ? [
+          // From broadcast/DeployMainnet.s.sol/4663/run-latest.json (2026-11-06). Public addresses only.
+          { name: "LiquidityHub", module: "FORGEHUB", role: "Shared liquidity hub · spoke credit limits", address: "0x7A7FfDFBB89C296106dA1A85B6fb13F27Ca357d8" },
           { name: "MarketFactory", module: "FORGEHUB", role: "Verifies and registers markets", address: NET_CONFIG.mainnet.marketFactory! },
-          ...NET_CONFIG.mainnet.markets.map((a, i) => ({ name: `Market ${i + 1}`, module: "FORGEHUB", role: "Isolated spoke market", address: a })),
+          ...NET_CONFIG.mainnet.markets.map((a, i) => ({ name: i === 0 ? "Market · WETH/USDG" : `Market ${i + 1}`, module: "FORGEHUB", role: "Isolated spoke market · pre-audit caps", address: a })),
+          { name: "CuratorRegistry", module: "FORGEHUB", role: "Registered markets and curators", address: "0x2a359cc48c2ab2C8197c2eD68616f95A12e0ec75" },
+          { name: "FeeController", module: "FORGEHUB", role: "Protocol / curator fee split", address: "0xa6B8411a3DA887e3a7C1C3E2cB9A2A5e49275C84" },
+          { name: "RiskEngine", module: "IRONCLAD", role: "Health factor and solvency checks", address: "0x21cdc0b927b798B6c5064657a440C6b50675a8f8" },
+          { name: "LiquidationEngine", module: "IRONCLAD", role: "Liquidation math", address: "0xa468da610DEC6eE56d968838Bab993f69f8510aC" },
+          { name: "InterestRateModel", module: "FORGEHUB", role: "Variable rate curve", address: "0xBBfE0cf80F5d6651a95156B6fFE6Ab06213ef4E7" },
+          { name: "OracleAdapter", module: "IRONCLAD", role: "Chainlink-style feeds with staleness bounds", address: "0x4572B9F17C9052fDAB5691f0dFbF0715dd60F9dE" },
+          { name: "PlaintextFHEAdapter", module: "VEILBOOK", role: "Public mode · no encryption (FHE privacy coming)", address: "0x81683dC80582d3CC618CD0F0C266C538cB641FE1" },
           { name: "LensReader", module: "STEEL LENS", role: "Read-only market and user snapshots", address: NET_CONFIG.mainnet.lensReader! },
+          { name: "EmergencyController", module: "BREAKGLASS", role: "Pause switches · repay never pauses", address: "0xCfE0f3981e7CEb91c985bA33c60bA7f3E27e606b" },
+          { name: "ForgeAdmin", module: "GOVERNANCE", role: "Deploys timelock + registry", address: "0x62e451eF11a01FE7b692c947dC63e197D2350e62" },
+          { name: "TimelockController", module: "GOVERNANCE", role: "48h timelock · governor of every market", address: "0x47cB8ee6CfDd18dA1450AC3a85a3179583Eb61A7" },
+          { name: "Safe 2-of-3", module: "GOVERNANCE", role: "Protocol admin and treasury", address: "0x3E7CEd699783751FBc7eb1545144DCe6C64D38CB" },
+          { name: "WETH", module: "ASSET", role: "Collateral token", address: "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73" },
+          { name: "USDG", module: "ASSET", role: "Loan token", address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" },
         ]
       : [],
   },

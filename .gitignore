@@ -7,3 +7,5 @@ lcov.info
 
 # Local anvil broadcast artifacts
 broadcast/*/31337/
+.env.mainnet
+.env.mainnet.railway

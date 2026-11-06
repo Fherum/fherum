@@ -105,7 +105,7 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          <Panel title="Rate model · illustration"><div className="p-5"><RateCurve /></div></Panel>
+          <Panel title="Rate model"><div className="p-5"><RateCurve /></div></Panel>
           <Panel title="Pause switches · Breakglass">
             <ul>
               {PAUSES.map(([label, field]) => {

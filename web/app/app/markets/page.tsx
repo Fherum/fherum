@@ -71,7 +71,7 @@ export default async function Markets() {
         />
 
         <div className="grid lg:grid-cols-2 gap-4">
-          <Panel title="Rate model · illustration">
+          <Panel title="Rate model · supply and borrow curves">
             <div className="p-5"><RateCurve /></div>
           </Panel>
           <Panel title="Hard bounds · enforced in contract">

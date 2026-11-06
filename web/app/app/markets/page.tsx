@@ -9,11 +9,14 @@ import { HARD_BOUNDS } from "@/lib/protocol";
 import { getNet } from "@/lib/net-server";
 import { marketsFor, amt, pct, tryReadMarket } from "@/lib/chain";
 import type { Net } from "@/lib/net";
+import { readHistory } from "@/lib/history";
+import { TokenLogo, PairLogo } from "@/components/token-logo";
+import { Sparkline } from "@/components/market-chart";
 
 const DEMO_ROUTE = "/app/markets/0x0000000000000000000000000000000000000000";
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
-const EARN_COLS = ["Supply asset", "Supply APY", "Total supplied", "Utilization", "Available", "Supply cap", "Market"];
-const BORROW_COLS = ["Collateral → Borrow", "Borrow APY", "Total borrowed", "Available to borrow", "Max LTV", "Liq. threshold", "Borrow cap", "Privacy"];
+const EARN_COLS = ["Supply asset", "Supply APY", "Total supplied", "Utilization", "Available", "Supply cap", "Trend", "Market"];
+const BORROW_COLS = ["Collateral → Borrow", "Borrow APY", "Total borrowed", "Available to borrow", "Max LTV", "Liq. threshold", "Borrow cap", "Trend", "Privacy"];
 type View = "earn" | "borrow";
 const colsOf = (v: View) => (v === "earn" ? EARN_COLS : BORROW_COLS);
 
@@ -145,28 +148,32 @@ async function Row({ address, net, v }: { address: `0x${string}`; net: Net; v: V
   const s = m.snap;
   const L = m.loan;
   const num = "px-4 h-14 text-right num font-mono";
+  const hist = await readHistory(address, net, L.decimals, 12);
+  const trend = <td className="px-4 h-14 text-right">{hist ? <Sparkline values={hist.points.map((p) => (v === "earn" ? p.supply : p.debt))} /> : <span className="font-mono text-[10px] text-mute">—</span>}</td>;
   if (v === "earn") {
     return (
       <tr className="border-b border-line last:border-0 hover:bg-s2">
-        <td className="px-4 h-14"><Link href={href} className="font-stencil text-lg uppercase hover:text-bronze">{L.symbol}</Link></td>
+        <td className="px-4 h-14"><Link href={href} className="flex items-center gap-3 font-stencil text-lg uppercase hover:text-bronze"><TokenLogo symbol={L.symbol} />{L.symbol}</Link></td>
         <td className={`${num} text-bronze`}>{pct(s.supplyRatePerYearWad)}</td>
         <td className={num}>{amt(s.totalSupplyAssets, L.decimals, 0)} {L.symbol}</td>
         <td className={num}>{pct(s.utilizationWad)}</td>
         <td className={num}>{amt(s.availableLiquidity, L.decimals, 0)} {L.symbol}</td>
         <td className={num}>{cap(s.supplyCap, L.decimals, L.symbol)}</td>
+        {trend}
         <td className="px-4 h-14 font-mono text-xs uppercase text-mute">vs {m.collateral.symbol}{s.paused ? " · paused" : ""}</td>
       </tr>
     );
   }
   return (
     <tr className="border-b border-line last:border-0 hover:bg-s2">
-      <td className="px-4 h-14"><Link href={href} className="font-stencil text-lg uppercase hover:text-bronze">{m.collateral.symbol} → {L.symbol}</Link></td>
+      <td className="px-4 h-14"><Link href={href} className="flex items-center gap-3 font-stencil text-lg uppercase hover:text-bronze"><PairLogo col={m.collateral.symbol} loan={L.symbol} />{m.collateral.symbol} → {L.symbol}</Link></td>
       <td className={`${num} text-bronze`}>{pct(s.borrowRatePerYearWad)}</td>
       <td className={num}>{amt(s.totalDebtAssets, L.decimals, 0)} {L.symbol}</td>
       <td className={num}>{amt(s.availableLiquidity, L.decimals, 0)} {L.symbol}</td>
       <td className={num}>{pct(s.ltvWad)}</td>
       <td className={num}>{pct(s.liquidationThresholdWad)}</td>
       <td className={num}>{cap(s.borrowCap, L.decimals, L.symbol)}</td>
+      {trend}
       <td className="px-4 h-14 font-mono text-xs uppercase">{s.privacyMode === 0 ? (net === "mainnet" ? "Public · FHE coming" : "Simulated") : `Mode ${s.privacyMode}`}{s.borrowPaused || s.paused ? " · paused" : ""}</td>
     </tr>
   );

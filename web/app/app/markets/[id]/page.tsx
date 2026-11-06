@@ -7,6 +7,9 @@ import { ActionPanel, type PanelMarket } from "@/components/action-panel";
 import { FHE_STATUS, HARD_BOUNDS, NET_CONFIG, PRIVACY_MODE, type NetKey } from "@/lib/protocol";
 import { getNet } from "@/lib/net-server";
 import type { NetInfo } from "@/lib/net";
+import { readHistory } from "@/lib/history";
+import { MarketChart } from "@/components/market-chart";
+import { PairLogo } from "@/components/token-logo";
 import { amt, pct, ray, tryReadMarket, wadNum, type MarketView, type Snapshot } from "@/lib/chain";
 
 type Fmt = "pct" | "loan" | "col" | "ray" | "wad" | "usd";
@@ -72,6 +75,16 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
             </div>
           ))}
         </div>
+
+        {m && (
+          <Panel title={<span className="flex items-center gap-3"><PairLogo col={m.collateral.symbol} loan={m.loan.symbol} size={22} />{m.collateral.symbol} → {m.loan.symbol} · history</span>}>
+            <div className="p-5">
+              <Suspense fallback={<p className="font-mono text-[11px] uppercase text-mute h-[240px]">Reading on-chain history…</p>}>
+                <History m={m} n={n} />
+              </Suspense>
+            </div>
+          </Panel>
+        )}
 
         {!live && (
           <Panel title="Status">
@@ -163,6 +176,12 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
       <div className="xl:sticky xl:top-24 min-w-0"><ActionPanel market={m ? toPanel(m) : undefined} /></div>
     </div>
   );
+}
+
+async function History({ m, n }: { m: MarketView; n: NetInfo }) {
+  const h = await readHistory(m.address, n.net, m.loan.decimals);
+  if (!h) return <p className="font-mono text-[11px] uppercase text-mute">History unavailable · RPC archive read failed</p>;
+  return <MarketChart points={h.points} symbol={m.loan.symbol} fromBlock={h.fromBlock} toBlock={h.toBlock} />;
 }
 
 async function Live({ id, n }: { id: `0x${string}`; n: NetInfo }) {

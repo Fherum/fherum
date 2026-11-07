@@ -32,9 +32,9 @@ function Tag({ i }: { i: number }) {
           <p className="font-mono text-[11px] mt-3 text-[#6b5a4a] break-words">{m.contracts}</p>
         </motion.div>
         <div className="mt-auto pt-6 flex items-center justify-between font-mono text-[11px]">
-          <span className={`px-2 py-1 ${m.status === "awaiting-vendor" ? "bg-[#ff5a1f] text-[#120c08]" : "bg-[#120c08] text-[#e9e4d8]"}`}>
+          {/* <span className={`px-2 py-1 ${m.status === "awaiting-vendor" ? "bg-[#ff5a1f] text-[#120c08]" : "bg-[#120c08] text-[#e9e4d8]"}`}>
             {m.status === "awaiting-vendor" ? "▲ " : "○ "}{LABEL[m.status]}
-          </span>
+          </span> */}
           <span>{open ? "− close" : "+ open"}</span>
         </div>
       </div>

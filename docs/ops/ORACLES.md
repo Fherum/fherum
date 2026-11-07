@@ -65,3 +65,9 @@ Official app.safe.global UI / Transaction Service support for 4663: **UNVERIFIED
 ## Recommended V1 launch pair
 
 Collateral WETH (ETH/USD feed, 24/7) — Borrow USDG (USDG/USD feed). Both feeds and tokens verified on-chain, crypto feeds trade 24/7 (no weekend staleness issue). This pair was used for the fork simulation.
+
+## Stock-token markets (checked 2026-11-07)
+
+TSLA / NVDA / AAPL tokens VERIFIED-ONCHAIN: name "<Co> • Robinhood Token", 18 dec, EIP-1967 beacon = 0xe10b6f6B275de231345c20D14Ab812db62151b00 (shared Stock beacon; copycat tickers exist, AddMarket.s.sol rejects any token not on this beacon).
+Feeds VERIFIED-ONCHAIN: RHTSLA / USD, RHNVDA / USD, Robinhood AAPL / USD (8 dec, answering). Price already includes the ERC-8056 multiplier, never apply uiMultiplier again.
+Add a market: script/AddMarket.s.sol (deploy, any EOA) then the printed 4-call Safe batch. Fork rehearsal: test/fork/AddMarketFork.t.sol.

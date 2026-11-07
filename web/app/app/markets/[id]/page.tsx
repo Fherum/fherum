@@ -140,10 +140,7 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
           <Panel title="Privacy · Veilbook">
             <div className="p-5 grid gap-3 text-sm">
               <p className="text-xl font-medium leading-none">{m ? (m.snap.privacyMode === 0 ? "Public" : `Mode ${m.snap.privacyMode}`) : PRIVACY_MODE}</p>
-              <p className="text-ink-2 leading-relaxed">{FHE_STATUS}</p>
-              <p className="text-xs text-mute">{n.mainnet
-                ? "Public mode · positions are visible on-chain · FHE privacy mode planned. Market aggregates stay public in every mode."
-                : "Market aggregates (totals, utilization, rates) stay public in every mode. Borrower positions are planned to move to FHE once a vendor supports this chain; testnet runs simulated encryption."}</p>
+              {/* <p className="text-ink-2 leading-relaxed">{FHE_STATUS}</p> */}
             </div>
           </Panel>
           <Panel title="Hard bounds · enforced in contract">

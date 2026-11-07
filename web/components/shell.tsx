@@ -31,9 +31,9 @@ function PrivacyNote() {
   const { mainnet } = useNet();
   return (
     <div className="mx-3 mt-6 mb-3 border border-bronze/50 p-3 grid gap-1.5">
-      <p className="font-mono text-[10px] uppercase text-bronze">■ FHE privacy layer · built in</p>
+      {/* <p className="font-mono text-[10px] uppercase text-bronze">■ FHE privacy layer · built in</p>
       <p className="text-xs leading-relaxed text-ink-2">Encrypted positions run through the VEILBOOK FHE adapter, fail-closed with no plaintext fallback.</p>
-      <p className="font-mono text-[10px] uppercase text-warn">▲ {mainnet ? "Encryption backend rolling out · positions public for now" : "Testnet · encryption simulated"}</p>
+      <p className="font-mono text-[10px] uppercase text-warn">▲ {mainnet ? "Encryption backend rolling out · positions public for now" : "Testnet · encryption simulated"}</p> */}
     </div>
   );
 }

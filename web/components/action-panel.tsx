@@ -301,15 +301,6 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
           ))}
         </dl>
 
-        <div className="border border-warn/30 bg-warn/5 p-3 text-xs leading-relaxed text-ink-2">
-          <span className="text-warn" aria-hidden>▲ </span>
-          {n.mainnet ? (
-            <><strong className="font-medium text-ink">Public mode · positions are visible on-chain · FHE privacy mode planned.</strong> Amounts, your address and token transfers are public on {TARGET_CHAIN.name}, like Aave or Compound. {AUDITED ? "" : "Contracts are not audited; caps are limited. "}<Link href="/risk" className="underline hover:text-bronze">Risks</Link></>
-          ) : (
-            <><strong className="font-medium text-ink">Public position · simulated encryption.</strong> Amounts, your address and token transfers are visible on {TARGET_CHAIN.name}. This testnet uses a mock FHE adapter, not real encryption.</>
-          )}
-        </div>
-
         <p className="text-xs text-mute leading-relaxed pretty">{NOTE[a]}</p>
 
         <button onClick={cta.onClick} disabled={cta.disabled}

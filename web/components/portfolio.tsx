@@ -20,7 +20,7 @@ const abi = parseAbi([
   "function healthFactorWad(address) view returns (uint256)",
 ]);
 
-type Row = { m: PortfolioMarket; supplied: bigint; collateral: bigint; debt: bigint; hf: bigint };
+type Row = { m: PortfolioMarket; supplied: bigint; collateral: bigint; debt: bigint; hf: bigint | null; failed?: boolean };
 const ZERO = BigInt(0);
 const RAY = BigInt(10) ** BigInt(27);
 
@@ -48,11 +48,18 @@ function usePositions(markets: PortfolioMarket[]) {
       const out = await Promise.all(markets.map(async (m) => {
         const r = (fn: "supplyIndex" | "supplyShares" | "collateralAssets" | "debtAssets" | "healthFactorWad") =>
           pub.readContract({ address: m.address, abi, functionName: fn, args: fn === "supplyIndex" ? [] : [user] } as never) as Promise<bigint>;
-        const [shares, idx, collateral, debt, hf] = await Promise.all([
-          r("supplyShares"), r("supplyIndex"), r("collateralAssets"), r("debtAssets"), r("healthFactorWad"),
-        ]);
-        return { m, supplied: (shares * idx) / RAY, collateral, debt, hf };
+        try {
+          const [shares, idx, collateral, debt] = await Promise.all([
+            r("supplyShares"), r("supplyIndex"), r("collateralAssets"), r("debtAssets"),
+          ]);
+          // healthFactorWad reverts on a stale oracle (stock feeds over the weekend); balances stay readable.
+          const hf = await r("healthFactorWad").catch(() => null);
+          return { m, supplied: (shares * idx) / RAY, collateral, debt, hf } as Row;
+        } catch {
+          return { m, supplied: ZERO, collateral: ZERO, debt: ZERO, hf: null, failed: true } as Row;
+        }
       }));
+      if (out.every((x) => x.failed)) throw new Error("all failed");
       setRows(out); setErr(null); setAt(Date.now());
     } catch {
       setErr("Could not read your position from the chain. Nothing is shown rather than guessed.");
@@ -82,7 +89,7 @@ function Gate({ markets, children }: { markets: PortfolioMarket[]; children: (p:
   return <>{children(p)}</>;
 }
 
-const open = (r: Row) => r.supplied > ZERO || r.collateral > ZERO || r.debt > ZERO;
+const open = (r: Row) => r.failed || r.supplied > ZERO || r.collateral > ZERO || r.debt > ZERO;
 
 function Table({ rows, at }: { rows: Row[]; at: number | null }) {
   const live = rows.filter(open);
@@ -101,10 +108,11 @@ function Table({ rows, at }: { rows: Row[]; at: number | null }) {
           {live.map((r) => (
             <tr key={r.m.address} className="border-b border-line last:border-0">
               <td className="px-5 py-4"><Link href={`/app/markets/${r.m.address}`} className="hover:text-bronze">{r.m.collateral.symbol} / {r.m.loan.symbol} →</Link></td>
+              {r.failed ? <td colSpan={4} className="px-5 py-4 text-xs text-warn">Could not read this market right now.</td> : <>
               <td className="px-5 py-4 num font-mono">{fmt(r.supplied, r.m.loan.decimals)} <span className="text-mute">{r.m.loan.symbol}</span></td>
               <td className="px-5 py-4 num font-mono">{fmt(r.collateral, r.m.collateral.decimals)} <span className="text-mute">{r.m.collateral.symbol}</span></td>
               <td className="px-5 py-4 num font-mono">{fmt(r.debt, r.m.loan.decimals)} <span className="text-mute">{r.m.loan.symbol}</span></td>
-              <td className="px-5 py-4 num font-mono">{r.debt === ZERO ? <span className="text-mute">No debt</span> : <span className={hfNum(r.hf) < 1.1 ? "text-bad" : hfNum(r.hf) < 1.5 ? "text-warn" : "text-ok"}>{hfNum(r.hf).toFixed(2)}</span>}</td>
+              <td className="px-5 py-4 num font-mono">{r.debt === ZERO ? <span className="text-mute">No debt</span> : r.hf === null ? <span className="text-warn">Oracle stale</span> : <span className={hfNum(r.hf) < 1.1 ? "text-bad" : hfNum(r.hf) < 1.5 ? "text-warn" : "text-ok"}>{hfNum(r.hf).toFixed(2)}</span>}</td></>}
             </tr>
           ))}
         </tbody>
@@ -123,8 +131,8 @@ export function PortfolioOverview({ markets, mode }: { markets: PortfolioMarket[
       </Panel>
       <Panel title="Health">
         <Gate markets={markets}>{(p) => {
-          const debtRows = p.rows!.filter((r) => r.debt > ZERO);
-          const worst = debtRows.length ? Math.min(...debtRows.map((r) => hfNum(r.hf))) : null;
+          const debtRows = p.rows!.filter((r) => r.debt > ZERO && r.hf !== null);
+          const worst = debtRows.length ? Math.min(...debtRows.map((r) => hfNum(r.hf!))) : null;
           return (
             <div className="p-5 grid gap-4">
               <div className="flex items-end justify-between">

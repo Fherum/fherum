@@ -1,9 +1,10 @@
 import { PageHead } from "@/components/shell";
-import { Empty, Panel, Tag } from "@/components/ui";
+import { Panel, Tag } from "@/components/ui";
+import { PortfolioTable, type PortfolioMarket } from "@/components/portfolio";
 import Link from "next/link";
 import { FIELDS } from "@/lib/protocol";
 import { Suspense } from "react";
-import { marketsFor } from "@/lib/chain";
+import { marketsFor, tryReadMarket } from "@/lib/chain";
 import { getNet } from "@/lib/net-server";
 
 const LEGEND = [
@@ -22,7 +23,7 @@ export default function Position() {
       <div className="grid xl:grid-cols-[1fr_380px] gap-4 items-start">
         <div className="grid gap-4">
           <Panel title="Collateral & debt">
-            <Empty title="Connect a wallet with an open position.">Values are labelled by provenance so you never mistake an estimate for chain state.</Empty>
+            <Suspense fallback={<p className="px-6 py-10 text-mute text-xs">Reading chain…</p>}><Live /></Suspense>
           </Panel>
           <Panel title="Data provenance">
             <ul className="grid sm:grid-cols-2">
@@ -60,4 +61,15 @@ async function MarketLinks() {
   return list.length
     ? <>{list.map((m) => <Link key={m} href={`/app/markets/${m}`} className="font-mono text-xs text-bronze hover:underline break-all">Open market {m.slice(0, 6)}…{m.slice(-4)} →</Link>)}</>
     : <p className="text-mute text-xs">No market is deployed on this network yet.</p>;
+}
+
+async function Live() {
+  const { net, live } = await getNet();
+  return <PortfolioTable markets={await portfolioMarkets(net, live)} />;
+}
+
+async function portfolioMarkets(net: Parameters<typeof marketsFor>[0], live: boolean): Promise<PortfolioMarket[]> {
+  if (!live) return [];
+  const res = await Promise.all(marketsFor(net).map((a) => tryReadMarket(a, net)));
+  return res.flatMap((r) => (r.ok ? [{ address: r.m.address, loan: { symbol: r.m.loan.symbol, decimals: r.m.loan.decimals }, collateral: { symbol: r.m.collateral.symbol, decimals: r.m.collateral.decimals } }] : []));
 }

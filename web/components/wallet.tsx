@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { CHAINS, ENABLED_NETS } from "@/lib/protocol";
 import { useNet, useNetwork } from "@/components/network-context";
 import { DEPLOYMENTS } from "@/lib/deployments";
@@ -13,50 +13,105 @@ type Eip1193 = {
 };
 declare global { interface Window { ethereum?: Eip1193 } }
 
+/** EIP-6963: each installed wallet announces itself, so users pick MetaMask / Rabby / … explicitly. */
+export type WalletInfo = { uuid: string; name: string; icon: string; rdns: string };
+type Announced = { info: WalletInfo; provider: Eip1193 };
+
+let active: Eip1193 | null = null;
+/** The provider the user chose. Every tx in the app must go through this, never a guessed window.ethereum. */
+export function getProvider(): Eip1193 | null { return active; }
+
+const PICK_KEY = "fherum.wallet.rdns";
+
 export type WalletState =
   | { status: "no_provider" }
   | { status: "disconnected" }
   | { status: "awaiting_signature" }
-  | { status: "connected"; address: string; chainId: number }
+  | { status: "connected"; address: string; chainId: number; wallet: string }
   | { status: "error"; message: string };
 
-const Ctx = createContext<{ w: WalletState; connect: () => void; switchChain: (id?: number) => void; disconnect: () => void; switchErr: string | null } | null>(null);
+type CtxT = {
+  w: WalletState; wallets: Announced[]; pickerOpen: boolean;
+  connect: () => void; closePicker: () => void; choose: (a: Announced) => void;
+  switchChain: (id?: number) => void; disconnect: () => void; switchErr: string | null;
+};
+const Ctx = createContext<CtxT | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const target = useNet().chain;
   const [w, setW] = useState<WalletState>({ status: "disconnected" });
+  const [wallets, setWallets] = useState<Announced[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [chosen, setChosen] = useState<Announced | null>(null);
 
-  const read = useCallback(async () => {
-    const eth = window.ethereum;
-    if (!eth) return setW({ status: "no_provider" });
-    const [accts, cid] = await Promise.all([
-      eth.request({ method: "eth_accounts" }) as Promise<string[]>,
-      eth.request({ method: "eth_chainId" }) as Promise<string>,
-    ]);
-    setW(accts[0] ? { status: "connected", address: accts[0], chainId: parseInt(cid, 16) } : { status: "disconnected" });
+  // Discover wallets (EIP-6963), with the legacy injected provider as a last-resort entry.
+  useEffect(() => {
+    const seen = new Map<string, Announced>();
+    const onAnnounce = (e: Event) => {
+      const d = (e as CustomEvent<Announced>).detail;
+      if (!d?.info?.rdns || seen.has(d.info.rdns)) return;
+      seen.set(d.info.rdns, d); setWallets([...seen.values()]);
+    };
+    window.addEventListener("eip6963:announceProvider", onAnnounce);
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    const t = setTimeout(() => {
+      if (!seen.size && window.ethereum) {
+        seen.set("injected", { info: { uuid: "injected", name: "Browser wallet", icon: "", rdns: "injected" }, provider: window.ethereum });
+        setWallets([...seen.values()]);
+      }
+      if (!seen.size) setW({ status: "no_provider" });
+    }, 400);
+    return () => { window.removeEventListener("eip6963:announceProvider", onAnnounce); clearTimeout(t); };
   }, []);
 
-  useEffect(() => {
-    // Reading the provider is a side effect on mount; state updates happen after the await.
-    const eth = window.ethereum;
-    const h = () => { read().catch(() => {}); };
-    queueMicrotask(h);
-    eth?.on?.("accountsChanged", h);
-    eth?.on?.("chainChanged", h);
-    return () => { eth?.removeListener?.("accountsChanged", h); eth?.removeListener?.("chainChanged", h); };
-  }, [read]);
+  const read = useCallback(async (a: Announced) => {
+    const [accts, cid] = await Promise.all([
+      a.provider.request({ method: "eth_accounts" }) as Promise<string[]>,
+      a.provider.request({ method: "eth_chainId" }) as Promise<string>,
+    ]);
+    if (accts[0]) { active = a.provider; setW({ status: "connected", address: accts[0], chainId: parseInt(cid, 16), wallet: a.info.name }); }
+    else { active = null; setW({ status: "disconnected" }); }
+  }, []);
 
-  const connect = useCallback(async () => {
-    const eth = window.ethereum;
-    if (!eth) return setW({ status: "no_provider" });
+  // Silent reconnect only for the wallet this user explicitly chose before (and didn't disconnect).
+  useEffect(() => {
+    if (chosen || !wallets.length) return;
+    const rdns = localStorage.getItem(PICK_KEY);
+    const a = rdns ? wallets.find((x) => x.info.rdns === rdns) : undefined;
+    if (a) queueMicrotask(() => { setChosen(a); read(a).catch(() => {}); });
+  }, [wallets, chosen, read]);
+
+  useEffect(() => {
+    if (!chosen) return;
+    const h = () => { read(chosen).catch(() => {}); };
+    chosen.provider.on?.("accountsChanged", h);
+    chosen.provider.on?.("chainChanged", h);
+    return () => { chosen.provider.removeListener?.("accountsChanged", h); chosen.provider.removeListener?.("chainChanged", h); };
+  }, [chosen, read]);
+
+  const connect = useCallback(() => {
+    if (!wallets.length) return setW({ status: "no_provider" });
+    setPickerOpen(true);
+  }, [wallets]);
+
+  const choose = useCallback(async (a: Announced) => {
+    setPickerOpen(false);
     setW({ status: "awaiting_signature" });
-    try { await eth.request({ method: "eth_requestAccounts" }); await read(); }
-    catch (e) { setW({ status: "error", message: (e as { code?: number }).code === 4001 ? "You rejected the request." : "Wallet request failed." }); }
+    try {
+      // wallet_requestPermissions always opens the wallet's approval screen, even for a site it already trusts.
+      try { await a.provider.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] }); }
+      catch (e) { if ((e as { code?: number }).code === 4001) throw e; await a.provider.request({ method: "eth_requestAccounts" }); }
+      localStorage.setItem(PICK_KEY, a.info.rdns);
+      setChosen(a);
+      await read(a);
+    } catch (e) {
+      setW({ status: "error", message: (e as { code?: number }).code === 4001 ? "You rejected the request." : "Wallet request failed." });
+    }
   }, [read]);
 
   const [switchErr, setSwitchErr] = useState<string | null>(null);
   const switchChain = useCallback(async (id: number = target.id) => {
-    const eth = window.ethereum; if (!eth) return;
+    const eth = active; if (!eth) return;
     const chain = Object.values(CHAINS).find((c) => c.id === id) ?? target;
     const hex = `0x${chain.id.toString(16)}`;
     setSwitchErr(null);
@@ -77,9 +132,62 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [target]);
 
-  const disconnect = useCallback(() => setW({ status: "disconnected" }), []);
+  const disconnect = useCallback(() => {
+    const p = active;
+    localStorage.removeItem(PICK_KEY);
+    active = null; setChosen(null); setW({ status: "disconnected" });
+    // Best effort: MetaMask/Rabby support revoking, so the next connect asks again.
+    p?.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }).catch(() => {});
+  }, []);
 
-  return <Ctx.Provider value={{ w, connect, switchChain, disconnect, switchErr }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ w, wallets, pickerOpen, connect, closePicker: () => setPickerOpen(false), choose, switchChain, disconnect, switchErr }}>
+      {children}
+      <WalletPicker />
+    </Ctx.Provider>
+  );
+}
+
+/** Wallet chooser. Native <dialog> for Esc + focus trap; no window.confirm. */
+function WalletPicker() {
+  const { wallets, pickerOpen, closePicker, choose } = useWallet();
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current; if (!d) return;
+    if (pickerOpen && !d.open) d.showModal();
+    if (!pickerOpen && d.open) d.close();
+  }, [pickerOpen]);
+  return (
+    <dialog ref={ref} onClose={closePicker} onClick={(e) => { if (e.target === ref.current) closePicker(); }}
+      aria-labelledby="wallet-picker-title"
+      className="m-auto w-[min(92vw,400px)] bg-s1 text-ink border border-line-2 p-0 backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+      <div className="p-6 grid gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="grid gap-1">
+            <span className="font-mono text-[10px] uppercase text-mute">Connect</span>
+            <h2 id="wallet-picker-title" className="text-xl font-medium">Choose a wallet</h2>
+          </div>
+          <button onClick={closePicker} aria-label="Close" className="h-8 w-8 shrink-0 border border-line-2 text-mute hover:text-ink">✕</button>
+        </div>
+        <ul className="grid gap-2">
+          {wallets.map((a) => (
+            <li key={a.info.rdns}>
+              <button onClick={() => choose(a)}
+                className="w-full flex items-center gap-3 border border-line-2 bg-bg px-4 py-3 text-left hover:border-bronze">
+                {a.info.icon
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={a.info.icon} alt="" className="h-7 w-7" />
+                  : <span aria-hidden className="grid place-items-center h-7 w-7 border border-line-2 font-mono text-xs">W</span>}
+                <span className="text-sm font-medium">{a.info.name}</span>
+                <span aria-hidden className="ml-auto text-bronze">→</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="text-[11px] text-mute">Your wallet will ask you to approve the connection. FHERUM never sees your keys.</p>
+      </div>
+    </dialog>
+  );
 }
 
 export function useWallet() {
@@ -108,7 +216,7 @@ export function WalletButton() {
       </span>
     ) : (
       <span className="h-9 px-3 border border-line-2 text-sm font-mono inline-flex items-center gap-2 text-ink">
-        <span aria-hidden className="text-ok text-[8px]">●</span>{short(w.address)}
+        <span aria-hidden className="text-ok text-[8px]">●</span><span className="hidden md:inline text-mute">{w.wallet}</span>{short(w.address)}
       </span>
     );
   }

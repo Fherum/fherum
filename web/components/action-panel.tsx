@@ -5,7 +5,7 @@ import {
   BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, custom, defineChain,
   formatUnits, maxUint256, parseAbi, parseUnits, type Address, type EIP1193Provider,
 } from "viem";
-import { useWallet } from "@/components/wallet";
+import { useWallet, getProvider } from "@/components/wallet";
 import { DEPLOYMENTS } from "@/lib/deployments";
 import { AUDITED } from "@/lib/protocol";
 import Link from "next/link";
@@ -111,7 +111,8 @@ const toChain = (c: NetInfo["chain"]) => defineChain({
 });
 // Browser reads and writes go through the user's wallet provider; the keyed server RPC never reaches the client.
 const clients = (chain: ReturnType<typeof toChain>) => {
-  const eth = window.ethereum as unknown as EIP1193Provider;
+  const eth = getProvider() as unknown as EIP1193Provider | null;
+  if (!eth) throw new Error("Connect a wallet first.");
   return {
     pub: createPublicClient({ chain, transport: custom(eth) }),
     wal: createWalletClient({ chain, transport: custom(eth) }),

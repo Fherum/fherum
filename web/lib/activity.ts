@@ -114,6 +114,12 @@ async function scanMarket(net: NetKey, market: Address, head: bigint): Promise<A
   return s.rows;
 }
 
+/** Mark a market's activity stale so the next read scans new blocks now (called after a confirmed tx). */
+export function invalidateActivity(net: NetKey, market: Address) {
+  const s = state.get(`${net}:${market}`);
+  if (s) s.at = 0;
+}
+
 /** All protocol events across markets, newest first. null = RPC failure (render an error, never fake rows). */
 export async function readActivity(markets: Address[], net: NetKey, limit = 100): Promise<ActivityRow[] | null> {
   if (!markets.length) return [];

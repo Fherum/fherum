@@ -9,6 +9,8 @@ import { useWallet } from "@/components/wallet";
 import { DEPLOYMENTS } from "@/lib/deployments";
 import { AUDITED } from "@/lib/protocol";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { txConfirmed } from "@/app/actions";
 import { useNet } from "@/components/network-context";
 import type { NetInfo } from "@/lib/net";
 
@@ -147,6 +149,7 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
   const act = ACTIONS.find((x) => x.key === a)!;
   const tok = market ? market[act.asset] : null;
 
+  const router = useRouter();
   const refresh = useCallback(async () => {
     if (!ready || !market || !user) return;
     const { pub } = clients(chain);
@@ -223,6 +226,7 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
       if (r.status !== "success") throw new Error("Transaction reverted on chain.");
       setStage("done"); setAmount(""); setMsg(`${act.label} confirmed.`);
       done.push({ label: act.label, hash, block: r.blockNumber });
+      txConfirmed(n.net, market.address).then(() => router.refresh()).catch(() => {});
       setReceipt({ title: `${act.label} successful`, detail: `${amount} ${tok.symbol}`, txs: done });
       await refresh();
     } catch (e) { setStage("error"); setMsg(explain(e, HINT[a])); }

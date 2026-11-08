@@ -45,6 +45,11 @@ async function deployBlock(net: NetKey, a: Address, b: Address, head: bigint) {
 const n = (v: bigint, d: number) => Number(v) / 10 ** d;
 const w = (v: bigint) => Number(v) / 1e18;
 
+/** Drop cached chart history for a market so the next render includes the latest block. */
+export function invalidateHistory(net: NetKey, market: Address) {
+  for (const k of [...cache.keys()]) if (k.startsWith(`${net}:${market}:`)) cache.delete(k);
+}
+
 export async function readHistory(market: Address, net: NetKey, decimals: number, samples = 30): Promise<History | null> {
   const key = `${net}:${market}:${samples}`;
   const c0 = cache.get(key);

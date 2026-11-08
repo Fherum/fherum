@@ -136,7 +136,7 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
   const [stage, setStage] = useState<Stage>("idle");
   const [msg, setMsg] = useState<string | null>(null);
   const [tx, setTx] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<{ title: string; detail: string; hashes: string[] } | null>(null);
+  const [receipt, setReceipt] = useState<TxReceiptData | null>(null);
   const { w, connect, switchChain } = useWallet();
   const n = useNet();
   const TARGET_CHAIN = n.chain;
@@ -198,6 +198,7 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
     const { pub, wal } = clients(chain);
     setMsg(null); setTx(null);
     try {
+      const done: TxLine[] = [];
       const fullRepay = a === "Repay" && !!pos && parsed >= pos.debt;
       const value = fullRepay ? maxUint256 : parsed;
       if (a === "Supply" || a === "Collateral" || a === "Repay") {
@@ -208,7 +209,9 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
           setStage("approve");
           const h = await wal.writeContract({ account: user, chain, address: tok.address, abi: erc20Abi, functionName: "approve", args: [market.address, need] });
           setTx(h);
-          await pub.waitForTransactionReceipt({ hash: h });
+          const ar = await pub.waitForTransactionReceipt({ hash: h });
+          if (ar.status !== "success") throw new Error("Approve reverted on chain.");
+          done.push({ label: `Approve ${tok.symbol}`, hash: h, block: ar.blockNumber });
         }
       }
       setStage("sign");
@@ -219,7 +222,8 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
       const r = await pub.waitForTransactionReceipt({ hash });
       if (r.status !== "success") throw new Error("Transaction reverted on chain.");
       setStage("done"); setAmount(""); setMsg(`${act.label} confirmed.`);
-      setReceipt({ title: `${act.label} confirmed`, detail: `${amount} ${tok.symbol}`, hashes: [hash] });
+      done.push({ label: act.label, hash, block: r.blockNumber });
+      setReceipt({ title: `${act.label} successful`, detail: `${amount} ${tok.symbol}`, txs: done });
       await refresh();
     } catch (e) { setStage("error"); setMsg(explain(e, HINT[a])); }
   }
@@ -229,16 +233,16 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
     const { pub, wal } = clients(chain);
     setMsg(null); setTx(null);
     try {
-      const hashes: string[] = [];
+      const txs: TxLine[] = [];
       for (const [t, n] of [[market.collateral, "10"], [market.loan, "10000"]] as const) {
         setStage("sign");
         const h = await wal.writeContract({ account: user, chain, address: t.address, abi: erc20Abi, functionName: "mint", args: [user, parseUnits(n, t.decimals)] });
         setTx(h); setStage("confirm");
-        await pub.waitForTransactionReceipt({ hash: h });
-        hashes.push(h);
+        const fr = await pub.waitForTransactionReceipt({ hash: h });
+        txs.push({ label: "Mint", hash: h, block: fr.blockNumber });
       }
       setStage("done"); setMsg(`Minted 10 ${market.collateral.symbol} and 10,000 ${market.loan.symbol} (testnet mocks, no value).`);
-      setReceipt({ title: "Faucet confirmed", detail: `10 ${market.collateral.symbol} + 10,000 ${market.loan.symbol} · testnet mocks`, hashes });
+      setReceipt({ title: "Faucet successful", detail: `10 ${market.collateral.symbol} + 10,000 ${market.loan.symbol} · testnet mocks`, txs });
       await refresh();
     } catch (e) { setStage("error"); setMsg(explain(e)); }
   }
@@ -390,49 +394,53 @@ function RiskDialog({ open, chainName, onAccept, onCancel }: { open: boolean; ch
   );
 }
 
-/** Success popup: every confirmed tx hash links straight to the block explorer. Native <dialog> gives Esc + focus trap. */
+type TxLine = { label: string; hash: string; block: bigint };
+type TxReceiptData = { title: string; detail: string; txs: TxLine[] };
+
+/** Success popup: full tx hash per confirmed tx, copy button, explorer link. Native <dialog> gives Esc + focus trap. */
 function TxModal({ data, explorer, chainName, onClose }: {
-  data: { title: string; detail: string; hashes: string[] } | null; explorer?: string; chainName: string; onClose: () => void;
+  data: TxReceiptData | null; explorer?: string; chainName: string; onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   useEffect(() => {
     const d = ref.current; if (!d) return;
     if (data && !d.open) d.showModal();
     if (!data && d.open) d.close();
   }, [data]);
+  const copy = (h: string) => { navigator.clipboard?.writeText(h).then(() => { setCopied(h); setTimeout(() => setCopied(null), 1500); }); };
   return (
     <dialog ref={ref} onClose={onClose} onClick={(e) => { if (e.target === ref.current) onClose(); }}
       aria-labelledby="tx-modal-title"
-      className="m-auto w-[min(92vw,440px)] bg-s1 text-ink border border-line-2 p-0 backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+      className="m-auto w-[min(94vw,560px)] bg-s1 text-ink border border-line-2 p-0 backdrop:bg-black/70 backdrop:backdrop-blur-sm">
       {data && (
         <div className="p-6 grid gap-5">
           <div className="flex items-start justify-between gap-4">
-            <div className="grid gap-1.5">
-              <span className="font-mono text-[10px] uppercase text-ok">● Transaction confirmed</span>
-              <h2 id="tx-modal-title" className="text-xl font-medium">{data.title}</h2>
-              <p className="font-mono text-xs text-mute">{data.detail} · {chainName}</p>
+            <div className="flex items-start gap-3">
+              <span aria-hidden className="grid place-items-center h-10 w-10 shrink-0 border border-ok/60 bg-ok/10 text-ok text-lg">✓</span>
+              <div className="grid gap-1">
+                <span className="font-mono text-[10px] uppercase text-ok">Transaction successful · status 1</span>
+                <h2 id="tx-modal-title" className="text-xl font-medium">{data.title}</h2>
+                <p className="font-mono text-xs text-mute">{data.detail} · {chainName}</p>
+              </div>
             </div>
             <button onClick={onClose} aria-label="Close" className="h-8 w-8 shrink-0 border border-line-2 text-mute hover:text-ink">✕</button>
           </div>
           <ul className="grid gap-2">
-            {data.hashes.map((h, i) => (
-              <li key={h}>
-                {explorer ? (
-                  <a href={`${explorer}/tx/${h}`} target="_blank" rel="noreferrer"
-                    className="group flex items-center justify-between gap-3 border border-line-2 bg-bg px-4 py-3 hover:border-bronze">
-                    <span className="grid gap-1 min-w-0">
-                      <span className="font-mono text-[10px] uppercase text-mute">Tx hash{data.hashes.length > 1 ? ` ${i + 1}` : ""}</span>
-                      <span className="font-mono text-sm truncate group-hover:text-bronze">{h.slice(0, 12)}…{h.slice(-10)}</span>
-                    </span>
-                    <span aria-hidden className="text-bronze shrink-0">↗</span>
-                  </a>
-                ) : (
-                  <div className="border border-line-2 bg-bg px-4 py-3 font-mono text-xs break-all">{h}</div>
-                )}
+            {data.txs.map((t) => (
+              <li key={t.hash} className="border border-line-2 bg-bg px-4 py-3 grid gap-2">
+                <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase text-mute">
+                  <span>{t.label} · tx hash</span>
+                  <span>block #{t.block.toString()}</span>
+                </div>
+                <code className="font-mono text-[12px] leading-relaxed text-ink break-all select-all">{t.hash}</code>
+                <div className="flex gap-2">
+                  <button onClick={() => copy(t.hash)} className="h-8 px-3 border border-line-2 font-mono text-[11px] text-mute hover:text-ink">{copied === t.hash ? "Copied" : "Copy"}</button>
+                  {explorer && <a href={`${explorer}/tx/${t.hash}`} target="_blank" rel="noreferrer" className="h-8 px-3 grid place-items-center border border-bronze/60 font-mono text-[11px] text-bronze hover:bg-bronze/10">View on explorer ↗</a>}
+                </div>
               </li>
             ))}
           </ul>
-          <p className="text-[11px] text-mute">{explorer ? "Opens the block explorer in a new tab." : "No explorer configured for this network."}</p>
           <button onClick={onClose} className="chamfer-sm h-11 bg-ink text-bg text-sm font-medium hover:bg-white">Done</button>
         </div>
       )}

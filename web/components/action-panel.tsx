@@ -260,7 +260,9 @@ export function ActionPanel({ market, only }: { market?: PanelMarket; only?: Act
   else if (a === "Borrow" && pos && pos.collateral === ZERO) cta = { label: "Add collateral first", disabled: true, reason: `Borrowing needs ${market!.collateral.symbol} collateral. Use the Add collateral tab.` };
   else if (a === "Repay" && pos && pos.debt === ZERO) cta = { label: "No debt to repay", disabled: true };
   else if (!parsed || parsed <= ZERO) cta = { label: "Enter an amount", disabled: true };
-  else if (max !== null && parsed > max && a !== "Repay") cta = { label: "Amount too high", disabled: true, reason: `Max ${fmt(max, tok!.decimals)} ${tok!.symbol}.` };
+  else if (max !== null && parsed > max && a !== "Repay") cta = (a === "Supply" || a === "Collateral")
+    ? { label: `Not enough ${tok!.symbol}`, disabled: true, reason: `This wallet holds ${fmt(max, tok!.decimals)} ${tok!.symbol}. Fund it with ${tok!.symbol} first.` }
+    : { label: "Amount too high", disabled: true, reason: `Max ${fmt(max, tok!.decimals)} ${tok!.symbol}.` };
   else cta = { label: busy ? "Working…" : act.label, onClick: start, disabled: busy };
 
   const explorer = DEPLOYMENTS[n.net].explorer?.replace(/\/$/, "");

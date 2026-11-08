@@ -54,6 +54,20 @@ export async function readHistory(market: Address, net: NetKey, decimals: number
   const key = `${net}:${market}:${samples}`;
   const c0 = cache.get(key);
   if (c0 && Date.now() - c0.at < TTL) return c0.v;
+  // Stale: serve the last real snapshot now and refresh in the background (never blocks navigation).
+  if (c0) {
+    if (!pending.has(key)) pending.set(key, compute(market, net, decimals, samples, key).finally(() => pending.delete(key)));
+    return c0.v;
+  }
+  if (pending.has(key)) return pending.get(key)!;
+  const p = compute(market, net, decimals, samples, key).finally(() => pending.delete(key));
+  pending.set(key, p);
+  return p;
+}
+
+const pending = new Map<string, Promise<History | null>>();
+
+async function compute(market: Address, net: NetKey, decimals: number, samples: number, key: string): Promise<History | null> {
   const lens = NET_CONFIG[net].lensReader;
   if (!lens) return null;
   try {

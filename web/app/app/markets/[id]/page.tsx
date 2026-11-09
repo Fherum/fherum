@@ -196,7 +196,7 @@ export default async function MarketDetail({ params }: { params: Promise<{ id: s
     <>
       <Link href="/app/markets" className="inline-block mb-6 font-mono text-xs uppercase text-ink-2 hover:text-bronze">← All markets</Link>
       <PageHead eyebrow={`Forgehub · market ${short(id)}`} title="Market"
-        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>{n.mainnet ? "Public mode · positions visible" : `Privacy · ${PRIVACY_MODE}`}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? `Deployed · ${n.net}` : "Not deployed"}</Tag></div>}>
+        aside={<div className="flex flex-wrap gap-2"><Tag>{TARGET_CHAIN.name}</Tag><Tag>{n.mainnet ? "FHE privacy · dual mode" : `Privacy · ${PRIVACY_MODE}`}</Tag><Tag tone={live ? "ok" : "mute"}>{live ? `Deployed · ${n.net}` : "Not deployed"}</Tag></div>}>
         One collateral asset, one loan asset, curator-set limits inside contract hard bounds. Every figure below is read from LensReader.snapshot(market) — nothing is shown until that call returns.
       </PageHead>
 

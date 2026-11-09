@@ -45,7 +45,7 @@ export function NetToggle({ className = "" }: { className?: string }) {
 export function NetStatus() {
   const { net } = useNetwork();
   const d = DEPLOYMENTS[net], live = d.contracts.length > 0;
-  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", net === "mainnet" ? "Public mode · FHE planned" : "Public · FHE"]];
+  const rows = [["Chain", `${d.chainId} · ${net}`], ["Contracts", live ? "Deployed" : "Not deployed"], ["Privacy", net === "mainnet" ? "FHE privacy · dual mode" : "FHE privacy · dual mode"]];
   return (
     <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-[#e9e4d8]/20 pt-4 font-mono text-[11px] uppercase pointer-events-auto">
       {rows.map(([k, v]) => (<div key={k} className="flex gap-2"><dt className="text-[#e9e4d8]/45">{k}</dt><dd>{v}</dd></div>))}

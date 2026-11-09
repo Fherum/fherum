@@ -55,13 +55,19 @@ function useNow() {
   return now;
 }
 
-export function CuratorConsole({ registry, minDelay, markets, queue, log, explorer, scannedTo }: {
-  registry: Address; minDelay: number; markets: CuratedMarket[]; queue: QueueRow[]; log: LogRow[]; explorer?: string; scannedTo: string;
+export function CuratorConsole({ registry, minDelay, markets, queue, log, explorer, scannedTo, scanning = false }: {
+  registry: Address; minDelay: number; markets: CuratedMarket[]; queue: QueueRow[]; log: LogRow[]; explorer?: string; scannedTo: string; scanning?: boolean;
 }) {
   const { w, connect, switchChain } = useWallet();
   const n = useNet();
   const router = useRouter();
   const now = useNow();
+  // History scan still catching up on the server: poll until it lands.
+  useEffect(() => {
+    if (!scanning) return;
+    const t = setInterval(() => router.refresh(), 8_000);
+    return () => clearInterval(t);
+  }, [scanning, router]);
   const user = w.status === "connected" ? (w.address as Address) : null;
   const onChain = w.status === "connected" && w.chainId === n.chain.id;
   const [roleRead, setRole] = useState<{ who: string; curator: boolean; admin: boolean } | null>(null);
@@ -161,7 +167,9 @@ export function CuratorConsole({ registry, minDelay, markets, queue, log, explor
           onHf={(m, v) => send("q", "Target HF change queued", `${m.label} · executes after ${delayH}h`, "queueTargetHealthFactor", [m.address, v])} />
 
         <Panel title={`Timelock queue · ${delayH}h delay`}>
-          {open.length === 0 ? (
+          {open.length === 0 && scanning ? (
+            <Empty title="Scanning registry history…">Queued changes appear once the chain scan finishes.</Empty>
+          ) : open.length === 0 ? (
             <Empty title="Nothing queued.">Every curator change waits here for {delayH} hours, visible to everyone, before it can take effect.</Empty>
           ) : (
             <ul>
@@ -191,8 +199,10 @@ export function CuratorConsole({ registry, minDelay, markets, queue, log, explor
         </Panel>
       </div>
 
-      <Panel title="Curator action log" aside={<span className="font-mono text-[10px] text-mute">scanned to block #{scannedTo}</span>}>
-        {log.length === 0 ? (
+      <Panel title="Curator action log" aside={<span className="font-mono text-[10px] text-mute">{scanning ? "scanning chain history…" : `scanned to block #${scannedTo}`}</span>}>
+        {scanning && log.length === 0 ? (
+          <Empty title="Scanning registry history…">Reading curator events from chain. This can take a minute on first load; the page updates by itself.</Empty>
+        ) : log.length === 0 ? (
           <Empty title="No curator actions yet.">Queue, execute and cancel events from the CuratorRegistry appear here with their transaction.</Empty>
         ) : (
           <div className="overflow-x-auto">

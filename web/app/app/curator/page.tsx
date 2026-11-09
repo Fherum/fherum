@@ -77,6 +77,7 @@ async function Live() {
       log={data.events.map((e) => ({ kind: e.kind, id: e.id, label: labelOf.get(e.id), market: e.market, tx: e.tx, block: e.block }))}
       explorer={DEPLOYMENTS[net].explorer ?? undefined}
       scannedTo={data.scannedTo}
+      scanning={data.scanning}
     />
   );
 }

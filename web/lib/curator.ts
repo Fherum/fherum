@@ -1,4 +1,6 @@
 import "server-only";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { CHAINS, type NetKey } from "@/lib/protocol";
 import { DEPLOYMENTS } from "@/lib/deployments";
@@ -74,12 +76,32 @@ export type CuratorData = {
   events: CuratorEvent[];
   queue: QueueItem[];
   scannedTo: string;
+  /** True while the event scan is still catching up; queue/log may be incomplete. */
+  scanning: boolean;
 };
 
 type Cache = { at: number; to: bigint; events: CuratorEvent[] };
-const cache = new Map<NetKey, Cache>();
-const pending = new Map<NetKey, Promise<CuratorData | null>>();
+// Kept on globalThis so dev hot-reloads don't throw away a finished scan, and mirrored to disk so a
+// server restart resumes from the last scanned block instead of rescanning from the deploy block.
+const G = globalThis as unknown as { __fherumCurator?: { cache: Map<NetKey, Cache>; scans: Map<NetKey, Promise<Cache>> } };
+const store = (G.__fherumCurator ??= { cache: new Map(), scans: new Map() });
 const TTL = 30_000;
+const WAIT_MS = 6_000;
+const diskPath = (net: NetKey) => path.join(process.cwd(), ".next", "cache", `fherum-curator-${net}.json`);
+
+async function loadDisk(net: NetKey, registry: Address): Promise<Cache | undefined> {
+  try {
+    const j = JSON.parse(await fs.readFile(diskPath(net), "utf8"));
+    if (j.registry?.toLowerCase() !== registry.toLowerCase()) return undefined;
+    return { at: 0, to: BigInt(j.to), events: j.events };
+  } catch { return undefined; }
+}
+async function saveDisk(net: NetKey, registry: Address, c: Cache) {
+  try {
+    await fs.mkdir(path.dirname(diskPath(net)), { recursive: true });
+    await fs.writeFile(diskPath(net), JSON.stringify({ registry, to: c.to.toString(), events: c.events }));
+  } catch { /* read-only FS: memory cache still works */ }
+}
 
 async function retry<T>(f: () => Promise<T>, n = 4): Promise<T> {
   for (let i = 0; ; i++) {
@@ -117,16 +139,31 @@ export async function readTargetHf(net: NetKey, market: Address): Promise<bigint
 }
 
 export function invalidateCurator(net: NetKey) {
-  const c = cache.get(net);
+  const c = store.cache.get(net);
   if (c) c.at = 0;
 }
 
-export async function readCurator(net: NetKey): Promise<CuratorData | null> {
-  const p = pending.get(net);
-  if (p) return p;
-  const run = compute(net).finally(() => pending.delete(net));
-  pending.set(net, run);
+/** Brings the event cache up to the chain head. One scan per network at a time; it keeps running
+ *  in the background even if the page stops waiting for it. */
+function refresh(net: NetKey, registry: Address): Promise<Cache> {
+  const running = store.scans.get(net);
+  if (running) return running;
+  const run = (async () => {
+    let c = store.cache.get(net) ?? (await loadDisk(net, registry));
+    const head = await (logsC[net] ??= mk(LOGS_RPC[net])).getBlockNumber();
+    const from = c ? c.to + BigInt(1) : FROM[net];
+    const fresh = from <= head ? await scan(net, registry, from, head) : [];
+    c = { at: Date.now(), to: head, events: [...(c?.events ?? []), ...fresh] };
+    store.cache.set(net, c);
+    void saveDisk(net, registry, c);
+    return c;
+  })().finally(() => store.scans.delete(net));
+  store.scans.set(net, run);
   return run;
+}
+
+export async function readCurator(net: NetKey): Promise<CuratorData | null> {
+  return compute(net);
 }
 
 async function compute(net: NetKey): Promise<CuratorData | null> {
@@ -136,13 +173,18 @@ async function compute(net: NetKey): Promise<CuratorData | null> {
   try {
     const timelock = (await rc.readContract({ address: registry, abi: regAbi, functionName: "timelock" })) as Address;
     const minDelay = Number(await rc.readContract({ address: timelock, abi: tlAbi, functionName: "getMinDelay" }));
-    let c = cache.get(net);
+    let c = store.cache.get(net);
+    let scanning = false;
     if (!c || Date.now() - c.at > TTL) {
-      const head = await (logsC[net] ??= mk(LOGS_RPC[net])).getBlockNumber();
-      const from = c ? c.to + BigInt(1) : FROM[net];
-      const fresh = from <= head ? await scan(net, registry, from, head) : [];
-      c = { at: Date.now(), to: head, events: [...(c?.events ?? []), ...fresh] };
-      cache.set(net, c);
+      const run = refresh(net, registry);
+      run.catch(() => {}); // a failed background scan is retried on the next request
+      const timedOut = Symbol();
+      const r = await Promise.race([run, new Promise<typeof timedOut>((res) => setTimeout(() => res(timedOut), WAIT_MS))]);
+      if (r === timedOut) {
+        // Don't block the page on a long history scan: show live market state now, history when ready.
+        scanning = true;
+        c = store.cache.get(net) ?? (await loadDisk(net, registry)) ?? { at: 0, to: FROM[net] - BigInt(1), events: [] };
+      } else c = r;
     }
     const events = [...c.events].sort((a, b) => (BigInt(b.block) === BigInt(a.block) ? b.logIndex - a.logIndex : BigInt(b.block) > BigInt(a.block) ? 1 : -1));
     const closed = new Map<string, "done" | "cancelled">();
@@ -156,7 +198,7 @@ async function compute(net: NetKey): Promise<CuratorData | null> {
       }
       return { id: e.id, market: e.market!, selector: e.selector!, eta: e.eta!, queuedTx: e.tx, state };
     }));
-    return { registry, timelock, minDelay, events, queue, scannedTo: c.to.toString() };
+    return { registry, timelock, minDelay, events, queue, scannedTo: c.to.toString(), scanning };
   } catch {
     return null;
   }

@@ -88,7 +88,7 @@ const HINT: Partial<Record<Action, string>> = {
   Withdraw: "Withdrawal rejected: the pool lacks available liquidity for that amount right now.",
 };
 
-function explain(e: unknown, hint?: string): string {
+export function explain(e: unknown, hint?: string): string {
   if ((e as { code?: number })?.code === 4001) return "You rejected the request in your wallet.";
   if (e instanceof BaseError) {
     const r = e.walk((x) => x instanceof ContractFunctionRevertedError);
@@ -104,7 +104,7 @@ function explain(e: unknown, hint?: string): string {
   return e instanceof Error ? e.message.split("\n")[0] : "Transaction failed.";
 }
 
-const toChain = (c: NetInfo["chain"]) => defineChain({
+export const toChain = (c: NetInfo["chain"]) => defineChain({
   id: c.id, name: c.name,
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [c.rpc] } },
@@ -401,11 +401,11 @@ function RiskDialog({ open, chainName, onAccept, onCancel }: { open: boolean; ch
   );
 }
 
-type TxLine = { label: string; hash: string; block: bigint };
-type TxReceiptData = { title: string; detail: string; txs: TxLine[] };
+export type TxLine = { label: string; hash: string; block: bigint };
+export type TxReceiptData = { title: string; detail: string; txs: TxLine[] };
 
 /** Success popup: full tx hash per confirmed tx, copy button, explorer link. Native <dialog> gives Esc + focus trap. */
-function TxModal({ data, explorer, chainName, onClose }: {
+export function TxModal({ data, explorer, chainName, onClose }: {
   data: TxReceiptData | null; explorer?: string; chainName: string; onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mark } from "@/components/brand";
+import { Mark, XLink } from "@/components/brand";
 import { GlyphField } from "@/components/fx/glyph-field";
 import { StackedCards } from "@/components/fx/stacked-cards";
 import { IronTags } from "@/components/fx/iron-tags";
@@ -27,7 +27,7 @@ export default function Landing() {
           <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
             <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
           </nav>
-          <div className="flex items-center gap-3"><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
+          <div className="flex items-center gap-3"><XLink className="h-9 w-9 justify-center border border-[#e9e4d8]/30 hover:text-[#ff5a1f] hover:border-[#ff5a1f]" /><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
         </div>
       </header>
 
@@ -138,7 +138,7 @@ export default function Landing() {
         <SlideLine dir={-1} className="font-stencil uppercase text-[26vw] leading-[0.78] pt-6">FHERUM FHERUM</SlideLine>
         <div className="px-5 md:px-8 py-8 grid md:grid-cols-[1fr_auto] gap-6 font-mono text-[11px] uppercase border-t-2 border-black">
           <p className="max-w-lg normal-case text-xs leading-relaxed">FHE-ready money markets. Positions are public today. Tokenized stock tokens are debt instruments providing economic exposure, not direct share ownership. Not audited unless stated; not investment advice.</p>
-          <span className="flex gap-6"><Link href="/risk" className="underline underline-offset-4">Risk disclosure</Link><Link href="/app" className="underline underline-offset-4">App preview →</Link></span>
+          <span className="flex flex-wrap items-center gap-6"><XLink label className="underline underline-offset-4" /><Link href="/risk" className="underline underline-offset-4">Risk disclosure</Link><Link href="/app" className="underline underline-offset-4">App preview →</Link></span>
         </div>
       </footer>
     </div>

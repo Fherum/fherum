@@ -1,18 +1,21 @@
 import { PageHead } from "@/components/shell";
 import { Empty, Panel, Th } from "@/components/ui";
 import { PAUSE_MATRIX, ROLES } from "@/lib/protocol";
+import { Suspense } from "react";
+import { getNet } from "@/lib/net-server";
+import { marketsFor, tryReadMarket } from "@/lib/chain";
+import { readCurator, readTargetHf, SELECTOR_LABEL } from "@/lib/curator";
+import { DEPLOYMENTS } from "@/lib/deployments";
+import { CuratorConsole, type CuratedMarket } from "@/components/curator-console";
 
 export default function Curator() {
   return (
     <>
       <PageHead eyebrow="Forgehub · Breakglass" title="Curator console">
-        Curators queue parameter changes; the timelock executes them. The guardian can pause, never move funds.
+        The curator sets each market&apos;s risk limits. Every change is queued in a public timelock, bounded by hard limits in the contract, and can never move user funds.
       </PageHead>
       <div className="grid gap-4">
-        <div className="grid lg:grid-cols-2 gap-4">
-          <Panel title="Markets you curate"><Empty title="Connect a curator wallet.">Markets assigned in CuratorRegistry appear here with current and queued parameters.</Empty></Panel>
-          <Panel title="Timelock queue"><Empty title="Nothing queued.">Each queued change shows its target value, the hard bound it sits within, and a countdown to its earliest execution block.</Empty></Panel>
-        </div>
+        <Suspense fallback={<Panel title="Curator console"><p className="px-6 py-10 text-mute text-xs">Reading registry and timelock from chain…</p></Panel>}><Live /></Suspense>
         <Panel title="Permission matrix">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
@@ -42,5 +45,38 @@ export default function Curator() {
         </Panel>
       </div>
     </>
+  );
+}
+
+async function Live() {
+  const { net, live } = await getNet();
+  if (!live) return <Panel title="Curator console"><Empty title="No deployment on this network." /></Panel>;
+  const [data, reads] = await Promise.all([readCurator(net), Promise.all(marketsFor(net).map((a) => tryReadMarket(a, net)))]);
+  if (!data) return <Panel title="Curator console"><Empty title="Could not read the registry.">The RPC did not answer. Nothing is shown rather than guessed. Reload to retry.</Empty></Panel>;
+  const ok = reads.flatMap((r) => (r.ok ? [r.m] : []));
+  const hfs = await Promise.all(ok.map((m) => readTargetHf(net, m.address)));
+  const markets: CuratedMarket[] = ok.map((m, i) => ({
+    address: m.address,
+    label: `${m.collateral.symbol} / ${m.loan.symbol}`,
+    loan: { symbol: m.loan.symbol, decimals: m.loan.decimals },
+    caps: { supply: m.snap.supplyCap.toString(), borrow: m.snap.borrowCap.toString(), walletSupply: m.snap.walletSupplyCap.toString(), walletBorrow: m.snap.walletBorrowCap.toString() },
+    totals: { supply: m.snap.totalSupplyAssets.toString(), debt: m.snap.totalDebtAssets.toString() },
+    utilWad: m.snap.utilizationWad.toString(),
+    ltvWad: m.snap.ltvWad.toString(),
+    ltWad: m.snap.liquidationThresholdWad.toString(),
+    targetHfWad: hfs[i]?.toString() ?? null,
+    paused: { any: m.snap.paused, borrow: m.snap.borrowPaused, removeCollateral: m.snap.removeCollateralPaused, liquidation: m.snap.liquidationPaused },
+  }));
+  const labelOf = new Map(data.queue.map((q) => [q.id, SELECTOR_LABEL[q.selector] ?? q.selector]));
+  return (
+    <CuratorConsole
+      registry={data.registry}
+      minDelay={data.minDelay}
+      markets={markets}
+      queue={data.queue.map((q) => ({ id: q.id, market: q.market, label: labelOf.get(q.id)!, eta: q.eta, queuedTx: q.queuedTx, state: q.state }))}
+      log={data.events.map((e) => ({ kind: e.kind, id: e.id, label: labelOf.get(e.id), market: e.market, tx: e.tx, block: e.block }))}
+      explorer={DEPLOYMENTS[net].explorer ?? undefined}
+      scannedTo={data.scannedTo}
+    />
   );
 }

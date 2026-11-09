@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 
 import { NetworkSwitch, WalletButton, WalletProvider } from "@/components/wallet";
 import { NetworkProvider, useNet } from "@/components/network-context";
+import { XLink } from "@/components/brand";
 import type { Net } from "@/lib/net";
 
 const NAV = [
@@ -62,7 +63,8 @@ function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <PrivacyNote />
-          <Link href="/risk" className="mx-3 mb-6 block font-mono text-[10px] uppercase text-mute hover:text-bronze">Risk disclosure →</Link>
+          <Link href="/risk" className="mx-3 mb-3 block font-mono text-[10px] uppercase text-mute hover:text-bronze">Risk disclosure →</Link>
+          <XLink label className="mx-3 mb-6 font-mono text-[10px] uppercase text-mute hover:text-bronze" />
         </aside>
 
         <div className="min-w-0 flex flex-col">
@@ -71,7 +73,7 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="hidden md:inline font-mono text-[11px] text-mute">
               <LiveNote />
             </span>
-            <div className="ml-auto flex items-center gap-3"><NetworkSwitch /><WalletButton /></div>
+            <div className="ml-auto flex items-center gap-3"><XLink className="h-9 w-9 justify-center border-2 border-line hover:border-ink" /><NetworkSwitch /><WalletButton /></div>
           </header>
           <main className="relative flex-1 p-4 md:p-6 lg:p-10">
             <div className="relative max-w-[1280px]">{children}</div>

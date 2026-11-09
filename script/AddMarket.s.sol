@@ -23,7 +23,7 @@ import {IAggregatorV3} from "../src/interfaces/IAggregatorV3.sol";
 contract AddMarket is Script {
     // Mainnet 4663 core (deployed 2026-11-06).
     address constant SAFE = 0x3E7CEd699783751FBc7eb1545144DCe6C64D38CB;
-    address constant CURATOR = 0xD7193c0A30e6267D4C13c7Fc912deA97A2F4Af3A;
+    address constant CURATOR = 0x785213e0Fc5fB1A7c19AF26b3ea533Df56A448b7;
     OracleAdapter constant ORACLE = OracleAdapter(0x4572B9F17C9052fDAB5691f0dFbF0715dd60F9dE);
     LiquidityHub constant HUB = LiquidityHub(0x7A7FfDFBB89C296106dA1A85B6fb13F27Ca357d8);
     MarketFactory constant FACTORY = MarketFactory(0x16A295d143CeB63371078bFDf0681dBBeBff547a);

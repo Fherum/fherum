@@ -1,3 +1,5 @@
+![FHERUM — Private Positions. Public Accountability.](docs/assets/fherum-banner.jpg)
+
 # FHERUM
 
 Encrypted money markets on Robinhood Chain. Private borrower positions. Public market accountability.

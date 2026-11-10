@@ -153,10 +153,10 @@ export const ROLES = [
     cannot: ["Bypass timelock on factory markets"],
   },
   {
-    role: "Curator",
-    holder: "Queues through CuratorRegistry",
+    role: "Risk curator",
+    holder: "Independent curator wallet · via CuratorRegistry",
     can: ["Queue risk params", "Queue caps", "Queue rate params", "Cancel queued"],
-    cannot: ["Exceed hard bounds", "Execute before delay"],
+    cannot: ["Move or withdraw user funds", "Exceed hard bounds", "Execute before the 48h delay", "Change fee recipient or eligibility"],
   },
   {
     role: "Guardian",

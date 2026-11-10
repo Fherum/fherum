@@ -11,10 +11,25 @@ import { CuratorConsole, type CuratedMarket } from "@/components/curator-console
 export default function Curator() {
   return (
     <>
-      <PageHead eyebrow="Forgehub · Breakglass" title="Curator console">
-        The curator sets each market&apos;s risk limits. Every change is queued in a public timelock, bounded by hard limits in the contract, and can never move user funds.
+      <PageHead eyebrow="Forgehub · Risk curation" title="Risk curator">
+        Every FHERUM market is managed by an independent risk curator. The curator sets supply and borrow caps, LTV, liquidation thresholds and rate curves to keep each market solvent. Every change waits 48 hours in a public timelock, stays inside hard limits enforced by the contract, and can never touch user funds.
       </PageHead>
       <div className="grid gap-4">
+        <Panel title="Curator mandate">
+          <ul className="grid sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["01 · Risk parameters", "Sets LTV, liquidation threshold, liquidation bonus and reserve factor per market."],
+              ["02 · Exposure caps", "Sizes total and per-wallet supply and borrow caps to available liquidity."],
+              ["03 · Rate curves", "Tunes base rate, slopes and the utilization kink so lenders are paid for risk."],
+              ["04 · Public accountability", "Every action is an on-chain event. 48h timelock, hard bounds, Safe 2-of-3 can cancel."],
+            ].map(([t, d], i) => (
+              <li key={t} className={`p-5 grid gap-2 content-start border-line ${i ? "border-l" : ""} max-sm:border-l-0 max-sm:border-t`}>
+                <span className="font-mono text-xs uppercase text-bronze">{t}</span>
+                <span className="text-sm text-ink-2">{d}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
         <Suspense fallback={<Panel title="Curator console"><p className="px-6 py-10 text-mute text-xs">Reading registry and timelock from chain…</p></Panel>}><Live /></Suspense>
         <Panel title="Permission matrix">
           <div className="overflow-x-auto">

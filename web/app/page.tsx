@@ -60,7 +60,7 @@ export default function Landing() {
       </section>
 
       <div style={{ background: MOLTEN, color: INK }}>
-        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
+        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · risk-curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
       </div>
 
       {/* PROBLEM — deep steel field with glyph rain + scroll-stacked cards */}

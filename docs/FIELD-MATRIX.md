@@ -1,6 +1,6 @@
 # Field matrix (shipping class)
 
-Brief ORC-20261028-01. The target column is the G0 classification for a later confidential release. The shipping column is what this repository stores and emits today. G1 was NO-GO for FHE on Robinhood Chain 4663/46630, so the shipping class of position amounts is Public.
+The target column is the G0 classification for a later confidential release. The shipping column is what this repository stores and emits today. G1 was NO-GO for FHE on Robinhood Chain 4663/46630, so the shipping class of position amounts is Public.
 
 | Data | Target after a vendor GO | Shipping in G2 | Where it lives |
 | --- | --- | --- | --- |

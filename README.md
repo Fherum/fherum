@@ -1,27 +1,58 @@
 # FHERUM
 
-Core lending contracts for a curated money market on Robinhood Chain. G2 is the plaintext skeleton. G4 adds a timelocked curator, an on-chain lens, an optional entry gate, and a fixed pause taxonomy.
+Encrypted money markets on Robinhood Chain. Private borrower positions. Public market accountability.
 
-Brief ID: ORC-20261028-01. Active branch: `feat/ORC-20261028-01`. Owner decision on 2026-10-28: stay on Robinhood Chain, ship public accounting now, and do not integrate a live FHE stack until a vendor supports this chain.
+Website: https://fherum.tech · X: [@Fherumfi](https://x.com/Fherumfi) · Token CA: [`0x8665f6e7ce1df1abe042d4b044e681be98a62974`](https://robinhoodchain.blockscout.com/token/0x8665f6e7ce1df1abe042d4b044e681be98a62974)
 
-Positions are **public** today. Confidential (FHE) positions ship after vendor support on chain 4663/46630.
+FHERUM is a curated lending protocol with an Aave V4-inspired hub-and-spoke architecture. Suppliers lend a borrow asset, borrowers post separate collateral, and an independent risk curator sets caps and risk parameters through a public 48-hour timelock.
 
-## What this is
+> **Unaudited.** The contracts have not been audited. Markets run with conservative caps. Use at your own risk.
 
-Users supply a borrow asset, post a separate collateral asset, borrow, repay, withdraw, and liquidate under curator-set risk parameters. A hub custodies tokens per market and enforces a credit line. Interest uses a kinked utilization curve and a share/index reserve.
+## Dual mode
 
-`privacyMode` is **Public** on every market. There is no setter. Collateral, debt, and Health Factor are public integers. `PlaintextFHEAdapter` implements the same call shape a future vendor adapter would (`encrypt`, `store`, `add`, `sub`, `mulByPlaintext`, compare, `decrypt`) by packing and unpacking `uint256` values. `encryptionAvailable()` is false. `isEncrypted` is false. `refuseCiphertextLabel` always reverts. These words are not ciphertext.
+FHERUM is built for two layers:
 
-G1 (2026-10-28) was a NO-GO for confidential lending on Robinhood Chain: neither CoFHE nor FHEVM serves chain id 4663 or 46630. This repository does not vendor those SDKs and does not claim a live FHE deployment.
+- **Private execution (FHE):** borrower positions — supply shares, collateral, debt, Health Factor — sit behind the `IFHEAdapter` interface (`encrypt`, `store`, `add`, `sub`, `mulByPlaintext`, compare, `decrypt`) with reserved storage words for ciphertext handles.
+- **Public markets:** totals, utilization, rates, caps, curator actions and pauses are always public and readable through `LensReader`.
 
-## Chain
+**Status today:** mainnet runs `PlaintextFHEAdapter`. It implements the same call shape with plain `uint256` values; `encryptionAvailable()` returns `false`. Positions, addresses and amounts are currently visible on-chain. The encrypted adapter is swapped in once an FHE coprocessor serves chain 4663. ERC-20 transfer amounts and wallet addresses stay public regardless, because the tokens themselves are public. See `docs/STORAGE-LAYOUT.md` and `docs/FIELD-MATRIX.md`.
 
-| Network | Chain ID | RPC |
-| --- | --- | --- |
-| Robinhood mainnet | 4663 | `https://rpc.mainnet.chain.robinhood.com` |
-| Robinhood testnet | 46630 | `https://rpc.testnet.chain.robinhood.com` |
+## Modules
 
-Nothing here broadcasts a deployment. `script/DeployRobinhoodTestnet.s.sol` only prints the intended order. It reverts if `FHERUM_BROADCAST=true`.
+| Module | Role |
+| --- | --- |
+| VEILBOOK | Position book behind the FHE adapter interface |
+| IRONCLAD | Fail-closed solvency: risk engine, oracle staleness, liquidation |
+| FORGEHUB | Hub-and-spoke liquidity, market factory, curator registry |
+| STEEL LENS | Public aggregate market data |
+| IRON GATE | Optional allowlist / Merkle entry gate |
+| BREAKGLASS | Guardian pause — repay is never blocked |
+
+## Mainnet deployment (Robinhood Chain, chain id 4663)
+
+| Contract | Address |
+| --- | --- |
+| Market · WETH/USDG | [`0xa4eE12E6f0C998B7Cc2F7Cc7724B2598Cb9370D7`](https://robinhoodchain.blockscout.com/address/0xa4eE12E6f0C998B7Cc2F7Cc7724B2598Cb9370D7) |
+| LiquidityHub | [`0x7A7FfDFBB89C296106dA1A85B6fb13F27Ca357d8`](https://robinhoodchain.blockscout.com/address/0x7A7FfDFBB89C296106dA1A85B6fb13F27Ca357d8) |
+| MarketFactory | [`0x16A295d143CeB63371078bFDf0681dBBeBff547a`](https://robinhoodchain.blockscout.com/address/0x16A295d143CeB63371078bFDf0681dBBeBff547a) |
+| CuratorRegistry | [`0x2a359cc48c2ab2C8197c2eD68616f95A12e0ec75`](https://robinhoodchain.blockscout.com/address/0x2a359cc48c2ab2C8197c2eD68616f95A12e0ec75) |
+| TimelockController (48h) | [`0x47cB8ee6CfDd18dA1450AC3a85a3179583Eb61A7`](https://robinhoodchain.blockscout.com/address/0x47cB8ee6CfDd18dA1450AC3a85a3179583Eb61A7) |
+| FeeController | [`0xa6B8411a3DA887e3a7C1C3E2cB9A2A5e49275C84`](https://robinhoodchain.blockscout.com/address/0xa6B8411a3DA887e3a7C1C3E2cB9A2A5e49275C84) |
+| RiskEngine | [`0x21cdc0b927b798B6c5064657a440C6b50675a8f8`](https://robinhoodchain.blockscout.com/address/0x21cdc0b927b798B6c5064657a440C6b50675a8f8) |
+| LiquidationEngine | [`0xa468da610DEC6eE56d968838Bab993f69f8510aC`](https://robinhoodchain.blockscout.com/address/0xa468da610DEC6eE56d968838Bab993f69f8510aC) |
+| InterestRateModel | [`0xBBfE0cf80F5d6651a95156B6fFE6Ab06213ef4E7`](https://robinhoodchain.blockscout.com/address/0xBBfE0cf80F5d6651a95156B6fFE6Ab06213ef4E7) |
+| OracleAdapter | [`0x4572B9F17C9052fDAB5691f0dFbF0715dd60F9dE`](https://robinhoodchain.blockscout.com/address/0x4572B9F17C9052fDAB5691f0dFbF0715dd60F9dE) |
+| PlaintextFHEAdapter | [`0x81683dC80582d3CC618CD0F0C266C538cB641FE1`](https://robinhoodchain.blockscout.com/address/0x81683dC80582d3CC618CD0F0C266C538cB641FE1) |
+| LensReader | [`0xeC2f34031a2476bc0Df896356E7BD84f7240A14c`](https://robinhoodchain.blockscout.com/address/0xeC2f34031a2476bc0Df896356E7BD84f7240A14c) |
+| EmergencyController | [`0xCfE0f3981e7CEb91c985bA33c60bA7f3E27e606b`](https://robinhoodchain.blockscout.com/address/0xCfE0f3981e7CEb91c985bA33c60bA7f3E27e606b) |
+| ForgeAdmin | [`0x62e451eF11a01FE7b692c947dC63e197D2350e62`](https://robinhoodchain.blockscout.com/address/0x62e451eF11a01FE7b692c947dC63e197D2350e62) |
+| Safe 2-of-3 (admin) | [`0x3E7CEd699783751FBc7eb1545144DCe6C64D38CB`](https://robinhoodchain.blockscout.com/address/0x3E7CEd699783751FBc7eb1545144DCe6C64D38CB) |
+| Guardian | [`0x300DEE0673703ffA09318e8889BF727E4f2A88AE`](https://robinhoodchain.blockscout.com/address/0x300DEE0673703ffA09318e8889BF727E4f2A88AE) |
+| Curator | [`0x785213e0Fc5fB1A7c19AF26b3ea533Df56A448b7`](https://robinhoodchain.blockscout.com/address/0x785213e0Fc5fB1A7c19AF26b3ea533Df56A448b7) |
+
+Public RPC: `https://rpc.mainnet.chain.robinhood.com`. Testnet is chain id 46630 (`https://rpc.testnet.chain.robinhood.com`).
+
+Verify any value directly with `cast` or Blockscout. `script/ops/curator-show.sh` prints the curator, Safe and timelock state read-only.
 
 ## Layout
 
@@ -44,15 +75,9 @@ Nothing here broadcasts a deployment. `script/DeployRobinhoodTestnet.s.sol` only
 | `LensReader` | View helpers for totals, utilization, rates, caps, pause, and `privacyMode` |
 | `AllowlistEligibility` | Optional address-set and Merkle gate for supply and borrow. Off unless set |
 
-Hub buckets are per market in G2. One market cannot draw another market's cash. Cross-spoke shared liquidity needs an interest-allocation design that is not in this release.
+Hub buckets are per market. One market cannot draw another market's cash. Cross-spoke shared liquidity needs an interest-allocation design that is not in this release.
 
 Collateral and borrow asset must differ. Collateral is escrowed 1:1 and does not earn the supply index. Suppliers of the borrow asset earn the supply index.
-
-## FHE-ready plan
-
-Position storage keeps a 4-word region for supply shares, collateral, and debt. Word 0 is the public integer today. Words 1 to 3, plus a Health Factor word, stay zero. `layoutVersion` is 1. A future implementation can write vendor handles into those reserved words without shifting the struct. See `docs/STORAGE-LAYOUT.md`.
-
-Until that implementation exists, and until a vendor actually serves 4663/46630, confidential mode is not selectable. Risk checks call `IFHEAdapter` and still operate on public values.
 
 ## Accounting sketch
 
@@ -70,11 +95,11 @@ Invariants, rounding, and known gaps are in `docs/INVARIANTS.md`. The public/tar
 
 ## Roles
 
-- Governor (`DEFAULT_ADMIN_ROLE` on hub, oracle, and emergency): allowlist, credit lines, spoke registration, oracle feeds, unpause. On markets created by `MarketFactory`, this role is the timelock, not the safe. The safe admins the timelock and the factory. It must be a Safe before any mainnet use. This repository does not deploy mainnet.
+- Governor (`DEFAULT_ADMIN_ROLE` on hub, oracle, and emergency): allowlist, credit lines, spoke registration, oracle feeds, unpause. On markets created by `MarketFactory`, this role is the timelock, not the safe. The safe admins the timelock and the factory. On mainnet it is a Safe 2-of-3.
 - Curator: queues risk parameters, caps, and rate parameters on factory markets. The timelock executes them after the delay, inside the same hard bounds (LTV at or below liquidation threshold, liquidation threshold at most 95%, bonus at most 15%, reserve factor at most 50%). A market constructed with an EOA curator can still change those parameters immediately. That path remains for tests. Production spokes should come from the factory.
 - Guardian: pause only. Pause blocks borrow, collateral withdrawal, and liquidation. Repay, supply, and borrow-asset withdrawal stay available. The guardian cannot unpause, cancel a timelock, edit an allowlist, or move tokens.
 
-`ForgeAdmin` requires a non-zero minimum delay. Queue, execute, and cancel are events on `CuratorRegistry`, alongside the timelock's `CallScheduled`, `CallExecuted`, and `Cancelled`. Details and the indexer event list are in `G4-REPORT.md` and `docs/INDEXER-EVENTS.md`.
+`ForgeAdmin` requires a non-zero minimum delay. Queue, execute, and cancel are events on `CuratorRegistry`, alongside the timelock's `CallScheduled`, `CallExecuted`, and `Cancelled`. The indexer event list is in `docs/INDEXER-EVENTS.md`.
 
 ## Develop
 
@@ -94,6 +119,18 @@ Slither, when installed:
 slither . --config-file slither.config.json
 ```
 
-## Out of scope
+## Repository
 
-No CoFHE or FHEVM SDK, no confidential user interface, no mainnet deploy, no private keys, no application frontend, no Aave V4 source, no protocol token. ERC-20 transfer amounts and wallet addresses stay public even after a future adapter, because the tokens themselves are public. Do not describe a deposit or a transfer as confidential.
+- `src/` — Solidity contracts (MIT)
+- `test/` — unit, fuzz and invariant tests
+- `script/` — deploy and read-only ops scripts. No script holds a key; broadcasts use `cast --account` keystores.
+- `web/` — Next.js app for fherum.tech. Copy `web/.env.example` to `web/.env.local`; never commit `.env*`.
+- `docs/` — invariants, storage layout, events, ops runbooks
+
+## Security
+
+See [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE)

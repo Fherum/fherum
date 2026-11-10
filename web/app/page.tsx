@@ -9,6 +9,7 @@ import { VeilDemo } from "@/components/fx/veil-demo";
 import { HealthFactorLab } from "@/components/hf-lab";
 import { Marquee } from "@/components/fx/marquee";
 import { ContractList } from "@/components/contract-list";
+import { CaChip } from "@/components/ca-chip";
 import { NetToggle, NetStatus, NetworkProvider } from "@/components/network-context";
 import { FIELDS, isDeployed } from "@/lib/protocol";
 
@@ -40,7 +41,7 @@ export default function Landing() {
         </div>
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-b from-transparent to-bg" />
         <div className="relative h-full md:mx-[14%] px-5 md:px-10 flex flex-col">
-          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span></div>
+          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span><div className="mt-3 flex justify-center"><CaChip /></div></div>
           <h1 className="mt-auto font-stencil uppercase text-ink leading-[0.86] tracking-[-0.005em] text-[clamp(44px,6.4vw,112px)]">
             <span className="block"><span className="text-bronze">Private</span> positions, by design.</span>
             <span className="block md:text-right text-ink/40"><span className="text-bronze">Public</span> market accountability.</span>

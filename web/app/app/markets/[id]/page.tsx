@@ -10,6 +10,8 @@ import type { NetInfo } from "@/lib/net";
 import { readHistory } from "@/lib/history";
 import { MarketChart } from "@/components/market-chart";
 import { PairLogo } from "@/components/token-logo";
+import { AssayPanel } from "@/components/assay-panel";
+import { readAssay } from "@/lib/assay";
 import { amt, pct, ray, tryReadMarket, wadNum, type MarketView, type Snapshot } from "@/lib/chain";
 
 type Fmt = "pct" | "loan" | "col" | "ray" | "wad" | "usd";
@@ -75,6 +77,12 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
             </div>
           ))}
         </div>
+
+        {m && (
+          <Suspense fallback={null}>
+            <Assay m={m} n={n} />
+          </Suspense>
+        )}
 
         {m && (
           <Panel title={<span className="flex items-center gap-3"><PairLogo col={m.collateral.symbol} loan={m.loan.symbol} size={22} />{m.collateral.symbol} → {m.loan.symbol} · history</span>}>
@@ -172,6 +180,20 @@ function Body({ id, n, m, error, loading }: { id: string; n: NetInfo; m?: Market
       </div>
       <div className="xl:sticky xl:top-24 min-w-0"><ActionPanel market={m ? toPanel(m) : undefined} /></div>
     </div>
+  );
+}
+
+// Only stock collateral registered in ASSAY gets a panel; anything else (e.g. WETH) renders nothing.
+async function Assay({ m, n }: { m: MarketView; n: NetInfo }) {
+  const a = await readAssay(m.collateral.address, n.net).catch(() => undefined);
+  if (a === null) return null;
+  return (
+    <Panel title={<span className="flex items-center gap-3"><PairLogo col={m.collateral.symbol} loan={m.loan.symbol} size={22} />{m.collateral.symbol} · dividend yield · Assay</span>}>
+      <div className="p-5">
+        {a ? <AssayPanel a={a} symbol={m.collateral.symbol} explorer={NET_CONFIG[n.net].explorer} />
+          : <p className="font-mono text-[11px] uppercase text-mute">Assay read failed · RPC unreachable</p>}
+      </div>
+    </Panel>
   );
 }
 

@@ -8,6 +8,7 @@ const ASSAY: Record<NetKey, Address | null> = {
   mainnet: pick(process.env.NEXT_PUBLIC_MAINNET_ASSAY, "0x4DF4DB5C5Eb920a2E98C0B6ddD579cFB1655d56A"),
   testnet: pick(process.env.NEXT_PUBLIC_ASSAY, null),
 };
+export const assayRegistry = (net: NetKey): Address | null => ASSAY[net];
 function pick(v: string | undefined, d: Address | null): Address | null {
   return v && isAddress(v) ? (v as Address) : d;
 }

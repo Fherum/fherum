@@ -29,6 +29,8 @@ export function FoundryPour({ side }: { side: "l" | "r" }) {
     addEventListener("pointermove", mv);
     const draw = () => {
       const step = 8 * devicePixelRatio, cols = Math.ceil(c.width / step), rows = Math.ceil(c.height / step);
+      // hidden (e.g. display:none on mobile) → 0-size canvas; getImageData would throw and crash the page
+      if (!cols || !rows) { raf = window.setTimeout(() => requestAnimationFrame(draw), 500); return; }
       src.width = cols; src.height = rows;
       // ── illustration in grid space (0..cols, 0..rows): ladle tilting, molten stream, mould, sparks
       sg.save(); if (flip) { sg.translate(cols, 0); sg.scale(-1, 1); }

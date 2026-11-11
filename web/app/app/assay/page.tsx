@@ -16,6 +16,9 @@ const PROOF: Partial<Record<NetKey, [string, string][]>> = {
   mainnet: [
     ["Registry deployed", "0xc07f0798879c406574942dc7d5f46b5e230a70c33826a2974351a86bb6db891f"],
     ["Safe 2-of-3 · register 12 stocks + attach hook (24 calls)", "0x619ef44b69fd2f8ae345d46ba4682346e9eebe1afa05c6839dfba0a7186b8d1a"],
+    ["SPY record · dividend +0.1718%", "0x597a9f1f95e4e6d8f890d57d4454b8a5c7b24295de2e424a2f8a76de1bb0fdd5"],
+    ["SPY market · borrow, isOpen() checked in-tx", "0xf6806dfb44ca7c38057712545d5f7f233c4d1ea1fc9e380778ae875ab0a9bad3"],
+    ["SPY market · remove collateral, isOpen() checked", "0xc69ed28c0882f65831c3b74b07bdda3f0a612684886b4d8f4cef2edae1331549"],
   ],
 };
 

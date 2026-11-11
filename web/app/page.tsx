@@ -10,6 +10,7 @@ import { HealthFactorLab } from "@/components/hf-lab";
 import { Marquee } from "@/components/fx/marquee";
 import { ContractList } from "@/components/contract-list";
 import { CaChip } from "@/components/ca-chip";
+import { AssayStrip } from "@/components/assay-strip";
 import { NetToggle, NetStatus, NetworkProvider } from "@/components/network-context";
 import { FIELDS, isDeployed } from "@/lib/protocol";
 
@@ -26,7 +27,7 @@ export default function Landing() {
         <div className="flex items-center justify-between px-5 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5"><Mark size={26} /><span className="font-stencil text-xl tracking-[0.12em]">FHERUM</span></Link>
           <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
-            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
+            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#assay">Assay</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
           </nav>
           <div className="flex items-center gap-3"><XLink className="h-9 w-9 justify-center border border-[#e9e4d8]/30 hover:text-[#ff5a1f] hover:border-[#ff5a1f]" /><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
         </div>
@@ -41,7 +42,7 @@ export default function Landing() {
         </div>
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-b from-transparent to-bg" />
         <div className="relative h-full md:mx-[14%] px-5 md:px-10 flex flex-col">
-          <div className="pt-8 text-center"><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span><div className="mt-3 flex justify-center"><CaChip /></div></div>
+          <div className="pt-8 text-center"><a href="#assay" className="group mb-3 inline-flex items-center gap-2 border border-bronze/60 bg-bg/80 px-2.5 py-1 font-mono text-[11px] uppercase text-ink hover:border-bronze hover:text-bronze"><span className="bg-bronze text-black px-1.5">New</span>ASSAY live on mainnet<span className="transition-transform group-hover:translate-x-0.5">→</span></a><br /><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span><div className="mt-3 flex justify-center"><CaChip /></div></div>
           <h1 className="mt-auto font-stencil uppercase text-ink leading-[0.86] tracking-[-0.005em] text-[clamp(44px,6.4vw,112px)]">
             <span className="block"><span className="text-bronze">Private</span> positions, by design.</span>
             <span className="block md:text-right text-ink/40"><span className="text-bronze">Public</span> market accountability.</span>
@@ -60,7 +61,7 @@ export default function Landing() {
       </section>
 
       <div style={{ background: MOLTEN, color: INK }}>
-        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · risk-curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay"]} />
+        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · risk-curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay", "ASSAY · dividend & split-aware stock collateral"]} />
       </div>
 
       {/* PROBLEM — deep steel field with glyph rain + scroll-stacked cards */}
@@ -114,12 +115,44 @@ export default function Landing() {
         <div className="border-2 border-[#e9e4d8] bg-[#050404] p-1 shadow-[12px_12px_0_#ff5a1f]"><HealthFactorLab /></div>
       </section>
 
+      {/* ASSAY — stock collateral integrity, live registry figures */}
+      <section id="assay" className="relative bg-[#050404] px-5 md:px-8 py-28 border-t-2 border-[#ff5a1f]">
+        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 items-end mb-14">
+          <div>
+            <p className="font-mono text-xs uppercase text-[#ff5a1f]">§04 — Assay · New on mainnet</p>
+            <h2 className="font-stencil uppercase text-6xl md:text-8xl leading-[0.85] mt-4">Stock collateral<br />that knows a<br /><span className="bg-[#ff5a1f] text-[#120c08] px-2">split</span> is coming.</h2>
+          </div>
+          <p className="max-w-xl text-[15px] leading-relaxed text-[#e9e4d8]/75">Robinhood stock tokens reinvest dividends into the token through the ERC-8056 uiMultiplier. ASSAY reads every change onchain, tells a dividend from a corporate action, and pauses borrows and collateral withdrawals on a stock while a split is in progress. Stock collateral keeps its dividend yield, read onchain.</p>
+        </div>
+        <AssayStrip />
+        <ol className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 border-2 border-[#e9e4d8]/80">
+          {[
+            ["01 · Read", "uiMultiplier() straight from the issuer contract. No offchain feed."],
+            ["02 · Classify", "A small step up inside the dividend band is a dividend. A split, reverse split or unexplained move is flagged."],
+            ["03 · Record", "record(token) is permissionless. Anyone can write the change onchain."],
+            ["04 · Gate", "Borrow, collateral withdrawal and liquidation call isOpen(token). Repay never stops."],
+          ].map(([t, d], i) => (
+            <li key={t} className={`p-5 grid gap-2 content-start border-[#e9e4d8]/25 ${i ? "lg:border-l" : ""} ${i % 2 ? "sm:border-l" : ""} ${i > 0 ? "max-sm:border-t" : ""} ${i > 1 ? "sm:max-lg:border-t" : ""}`}>
+              <span className="font-mono text-xs uppercase text-[#ff5a1f]">{t}</span>
+              <span className="text-sm text-[#e9e4d8]/75">{d}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-6">
+          <a href="https://robinhoodchain.blockscout.com/tx/0xf6806dfb44ca7c38057712545d5f7f233c4d1ea1fc9e380778ae875ab0a9bad3" target="_blank" rel="noreferrer" className="group font-mono text-[11px] uppercase text-[#e9e4d8]/70 hover:text-[#ff5a1f]">
+            <span className="text-[#ff5a1f]">◆</span> Real borrow on SPY/USDG · isOpen() checked in-tx · <span className="underline underline-offset-4">0xf680…bad3</span> ↗
+          </a>
+          <Link href="/app/assay" className="h-12 px-5 inline-flex items-center bg-[#ff5a1f] text-black font-mono text-xs uppercase hover:brightness-110 shadow-[6px_6px_0_#e9e4d8]">Open ASSAY registry →</Link>
+        </div>
+        <p className="mt-8 max-w-3xl font-mono text-[10px] leading-relaxed text-[#e9e4d8]/40">Figures are past onchain records, not projections. Dividends are reinvested into the token&apos;s uiMultiplier, not paid in cash. Not investment advice. Not affiliated with Robinhood.</p>
+      </section>
+
       {/* STACK — paper, stamped iron tags */}
       <section id="stack" style={{ background: PAPER, color: INK }} className="px-5 md:px-8 py-28">
         <div className="flex flex-wrap items-end justify-between gap-6 mb-14">
           <div>
-            <p className="font-mono text-xs uppercase">§04 — The stack</p>
-            <h2 className="font-stencil uppercase text-6xl md:text-9xl leading-[0.82] mt-4">Six modules.<br />One forge.</h2>
+            <p className="font-mono text-xs uppercase">§05 — The stack</p>
+            <h2 className="font-stencil uppercase text-6xl md:text-9xl leading-[0.82] mt-4">Seven modules.<br />One forge.</h2>
           </div>
           <p className="max-w-xs font-mono text-xs uppercase leading-relaxed">Status is what exists in this repository — not a roadmap. Click a tag to read it.</p>
         </div>

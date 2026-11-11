@@ -5,7 +5,7 @@ import { useState } from "react";
 import { STACK, STATUS_LABEL, STATUS_LABEL_MAINNET } from "@/lib/protocol";
 import { useNetwork } from "@/components/network-context";
 
-const GLYPH = ["◐", "◆", "⬢", "◎", "⊓", "✕"];
+const GLYPH = ["◐", "◆", "⬢", "◎", "⊓", "✕", "◈"];
 
 /** Stamped iron dog-tags. Hover to lift, click to stamp-flip. */
 function Tag({ i }: { i: number }) {

@@ -128,6 +128,13 @@ export const STACK: {
     contracts: "LiquidationEngine · EmergencyController",
     status: "in-repo",
   },
+  {
+    brand: "ASSAY",
+    role: "Stock collateral integrity",
+    line: "Reads each stock token's ERC-8056 uiMultiplier, records dividends onchain and pauses borrow and collateral withdrawal while a corporate action is in progress. Repay stays open.",
+    contracts: "AssayRegistry · OracleAdapter hook",
+    status: "in-repo",
+  },
 ];
 
 export const STATUS_LABEL: Record<ModuleStatus, string> = {

@@ -21,7 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable} ${display.variable} ${stencil.variable}`}>
       <head>
         {/* mark repeat visits (this session) before paint so the intro never flashes */}
-        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("fherum.intro"))document.documentElement.dataset.intro="seen"}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{if(location.pathname.startsWith(\"/embed\")||sessionStorage.getItem("fherum.intro"))document.documentElement.dataset.intro="seen"}catch(e){}` }} />
       </head>
       <body className="min-h-dvh">
         <IntroLoader />

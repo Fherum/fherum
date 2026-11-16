@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // /embed/* is meant to be iframed by any integrator site (headless lending widget).
+  async headers() {
+    return [{ source: "/embed/:path*", headers: [{ key: "Content-Security-Policy", value: "frame-ancestors *" }] }];
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

@@ -1,3 +1,4 @@
+import { CopyButton } from "@/components/copy-button";
 import { Suspense } from "react";
 import Link from "next/link";
 import { PageHead } from "@/components/shell";
@@ -31,6 +32,10 @@ export default async function BuildPage() {
   const lens = NET_CONFIG.mainnet.lensReader ?? "0x…";
   const market = marketsFor("mainnet")[0] ?? "0x…";
   const byName = new Map(DEPLOYMENTS.mainnet.contracts.map((c) => [c.name, c.address]));
+  const embedCode = `<iframe
+  src="https://fherum.tech/embed/${market}?brand=Acme%20Earn&accent=3dd68c"
+  width="380" height="640" style="border:0"
+  allow="clipboard-write"></iframe>`;
   const snippet = `import { createPublicClient, http, parseAbi } from "viem";
 
 const client = createPublicClient({ transport: http("https://robinhood.daybreak-rpc.network") });
@@ -104,9 +109,23 @@ console.log("supply APY", Number(s.supplyRatePerYearWad) / 1e16, "%");`;
           <pre className="p-5 overflow-x-auto font-mono text-[12px] leading-relaxed text-ink-2">{snippet}</pre>
           <p className="px-5 py-3 border-t border-line text-xs text-mute">
             Works today against mainnet. Read helpers and tx builders ship as{" "}
-            <a href="https://github.com/Fherum/fherum/tree/main/packages/headless" target="_blank" rel="noreferrer" className="font-mono text-bronze hover:underline">@fherum/headless ↗</a>. Embeddable widget is next.
+            <a href="https://github.com/Fherum/fherum/tree/main/packages/headless" target="_blank" rel="noreferrer" className="font-mono text-bronze hover:underline">@fherum/headless ↗</a>.
             {" "}<Link href="/app/markets" className="text-bronze hover:underline">See the reference frontend →</Link>
           </p>
+        </Panel>
+
+        <Panel title="Embed · drop-in widget" aside={<span className="font-mono text-[11px] text-mute">real tx · user's own wallet</span>}>
+          <div className="grid lg:grid-cols-[1fr_380px]">
+            <div className="p-5 grid gap-3 content-start">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-ink">Paste this into your site. The live widget on the right is what your users get.</p>
+                <CopyButton text={embedCode} />
+              </div>
+              <pre className="overflow-x-auto font-mono text-[12px] leading-relaxed text-ink-2">{embedCode}</pre>
+              <p className="text-xs text-mute">Params: <span className="font-mono">brand</span> (24 chars), <span className="font-mono">accent</span> (hex), <span className="font-mono">mode=earn|borrow</span>. Mainnet only. Every action is signed in the visitor&apos;s wallet; FHERUM never holds keys.</p>
+            </div>
+            <iframe src={`/embed/${market}?brand=Acme%20Earn&accent=3dd68c`} title="FHERUM embed preview" className="w-full h-[640px] border-l border-line" />
+          </div>
         </Panel>
 
         <p className="text-xs text-mute">Public mode: positions are visible on-chain. Not audited, caps limited. New markets go through the curator and a 48h timelock.</p>

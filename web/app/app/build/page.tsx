@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/shell";
 import { Panel, Tag } from "@/components/ui";
 import { BuildSandbox, type SandboxMarket } from "@/components/build-sandbox";
-import { getNet } from "@/lib/net-server";
+import { isDeployed } from "@/lib/protocol";
 import { amt, marketsFor, pct, tryReadMarket } from "@/lib/chain";
 import { DEPLOYMENTS } from "@/lib/deployments";
 import { NET_CONFIG } from "@/lib/protocol";
@@ -35,7 +35,9 @@ const GALLERY: { who: string; what: string; how: string; tag: "live" | "example"
 ];
 
 export default async function BuildPage() {
-  const { net, live } = await getNet();
+  // Headless runs on mainnet only: read mainnet regardless of the app network toggle.
+  const net: Net = "mainnet";
+  const live = isDeployed("mainnet");
   const lens = NET_CONFIG.mainnet.lensReader ?? "0x…";
   const market = marketsFor("mainnet")[0] ?? "0x…";
   const byName = new Map(DEPLOYMENTS.mainnet.contracts.map((c) => [c.name, c.address]));

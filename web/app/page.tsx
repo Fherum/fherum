@@ -11,7 +11,7 @@ import { Marquee } from "@/components/fx/marquee";
 import { ContractList } from "@/components/contract-list";
 import { CaChip } from "@/components/ca-chip";
 import { AssayStrip } from "@/components/assay-strip";
-import { NetToggle, NetStatus, NetworkProvider } from "@/components/network-context";
+import { NetStatus, NetworkProvider } from "@/components/network-context";
 import { FIELDS, isDeployed } from "@/lib/protocol";
 
 const INK = "#120c08", PAPER = "#e9e4d8", MOLTEN = "#ff5a1f";
@@ -26,10 +26,10 @@ export default function Landing() {
       <header className="fixed top-0 inset-x-0 z-50 text-[#e9e4d8] bg-[#050404]/70 backdrop-blur-md border-b border-[#e9e4d8]/10">
         <div className="flex items-center justify-between px-5 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5"><Mark size={26} /><span className="font-stencil text-xl tracking-[0.12em]">FHERUM</span></Link>
-          <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
-            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#assay">Assay</a><a href="#headless">Build</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
+          <nav className="hidden lg:flex gap-10 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
+            <a href="#veil">Protocol</a><a href="#assay">Assay</a><a href="#headless">Build</a><Link href="/app/build/docs">Docs</Link>
           </nav>
-          <div className="flex items-center gap-3"><XLink className="h-9 w-9 justify-center border border-[#e9e4d8]/30 hover:text-[#ff5a1f] hover:border-[#ff5a1f]" /><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
+          <div className="flex items-center gap-3"><XLink className="h-9 w-9 justify-center border border-[#e9e4d8]/30 hover:text-[#ff5a1f] hover:border-[#ff5a1f]" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
         </div>
       </header>
 

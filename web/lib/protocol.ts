@@ -11,7 +11,7 @@ export const CHAINS = {
   mainnet: {
     id: 4663,
     name: "Robinhood Chain",
-    rpc: "https://rpc.mainnet.chain.robinhood.com",
+    rpc: "https://robinhood.daybreak-rpc.network",
   },
 } as const;
 

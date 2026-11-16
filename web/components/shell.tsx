@@ -16,8 +16,9 @@ const NAV = [
   { href: "/app/lens", label: "Steel Lens", k: "04" },
   { href: "/app/curator", label: "Curator", k: "05" },
   { href: "/app/assay", label: "Assay", k: "06" },
-  { href: "/app/activity", label: "Activity", k: "07" },
-  { href: "/app/settings", label: "Settings", k: "08" },
+  { href: "/app/build", label: "Build · Headless", k: "07" },
+  { href: "/app/activity", label: "Activity", k: "08" },
+  { href: "/app/settings", label: "Settings", k: "09" },
 ];
 
 export function AppShell({ children, net }: { children: ReactNode; net: Net }) {

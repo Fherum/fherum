@@ -27,6 +27,13 @@ const MODULES: { title: string; line: string; contracts: string[] }[] = [
   { title: "Open by default", line: "No API key, no allowlist to read or integrate. Anyone can build a lending front on FHERUM.", contracts: ["LiquidityHub"] },
 ];
 
+const GALLERY: { who: string; what: string; how: string; tag: "live" | "example"; href?: string; proof?: string }[] = [
+  { who: "HEARTH agent vault", what: "An AI agent parks idle USDG into FHERUM markets under 14 on-chain hook rules.", how: "SDK tx builders + HEARTH router", tag: "live", proof: "0x1bef83ac0afb2658af3ade4c4e37519fbe1ccbc70f41475d00a6cd5ebb5e3ab7" },
+  { who: "Embedded earn widget", what: "A third-party page supplies USDG through the FHERUM iframe, signed in the visitor's wallet.", how: "/embed widget", tag: "live", proof: "0x761c9e13439c4eeb4708dbbfe7b8b0fcfd7b7f695ecccbc12ff688046e47350b" },
+  { who: "Stock trading app", what: "\"Borrow against your shares\": users post tokenized SPY or NVDA as collateral and borrow USDG.", how: "SDK · addCollateral + borrow", tag: "example" },
+  { who: "Wallet earn tab", what: "A wallet shows FHERUM supply APY next to the user's USDG balance with one-tap supply.", how: "SDK · listMarkets + supply", tag: "example" },
+];
+
 export default async function BuildPage() {
   const { net, live } = await getNet();
   const lens = NET_CONFIG.mainnet.lensReader ?? "0x…";
@@ -126,6 +133,25 @@ console.log("supply APY", Number(s.supplyRatePerYearWad) / 1e16, "%");`;
             </div>
             <iframe src={`/embed/${market}?brand=Acme%20Earn&accent=3dd68c`} title="FHERUM embed preview" className="w-full h-[640px] border-l border-line" />
           </div>
+        </Panel>
+
+        <Panel title="Integrations" aside={<Link href="/app/build/docs" className="font-mono text-[11px] text-bronze hover:underline">Read the docs →</Link>}>
+          <ul className="grid md:grid-cols-2">
+            {GALLERY.map((g, i) => (
+              <li key={g.who} className={`p-5 grid gap-2 content-start border-line ${i ? "max-md:border-t" : ""} ${i % 2 ? "md:border-l" : ""} ${i > 1 ? "md:border-t" : ""}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-sm uppercase text-ink">{g.who}</span>
+                  {g.tag === "live" ? <Tag tone="ok">Live on mainnet</Tag> : <Tag tone="warn">Example integration</Tag>}
+                </div>
+                <p className="text-sm text-ink-2">{g.what}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-mute">
+                  <span>{g.how}</span>
+                  {g.proof && <a href={`${EX}/tx/${g.proof}`} target="_blank" rel="noreferrer" className="underline hover:text-ink">tx {short(g.proof)} ↗</a>}
+                  {g.href && <Link href={g.href} className="underline hover:text-ink">Open →</Link>}
+                </div>
+              </li>
+            ))}
+          </ul>
         </Panel>
 
         <p className="text-xs text-mute">Public mode: positions are visible on-chain. Not audited, caps limited. New markets go through the curator and a 48h timelock.</p>

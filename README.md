@@ -30,6 +30,18 @@ FHERUM is built for two layers:
 | IRON GATE | Optional allowlist / Merkle entry gate |
 | BREAKGLASS | Guardian pause — repay is never blocked |
 
+## Headless Lending
+
+FHERUM is the lending engine, without the frontend. Any app (wallet, trading app, vault or AI agent) can put lending inside its own product while FHERUM markets handle rates, risk, oracles, liquidation and settlement. No new contracts: integrations call the live mainnet markets directly. Headless architecture, inspired by ATLAS.
+
+| Way in | What you get |
+| --- | --- |
+| Widget | `<iframe src="https://fherum.tech/embed/<market>?brand=Your%20App&accent=3dd68c">`. Branded earn (`mode=earn`) or borrow (`mode=borrow`) box. Users sign in their own wallet |
+| SDK | [`packages/headless`](packages/headless) (`@fherum/headless`, viem only). Reads markets and positions, builds `{ to, data, value }` for supply, withdraw, collateral, borrow, repay and HEARTH agent vaults. Never signs |
+| Builder console | [fherum.tech/app/build](https://fherum.tech/app/build): live engine stats, sandbox, embed preview. Docs at [/app/build/docs](https://fherum.tech/app/build/docs) |
+
+Real supply through the embed widget: [`0x761c…350b`](https://robinhoodchain.blockscout.com/tx/0x761c9e13439c4eeb4708dbbfe7b8b0fcfd7b7f695ecccbc12ff688046e47350b). The SDK is not on npm yet; copy `packages/headless/src`.
+
 ## Mainnet deployment (Robinhood Chain, chain id 4663)
 
 | Contract | Address |

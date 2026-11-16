@@ -27,7 +27,7 @@ export default function Landing() {
         <div className="flex items-center justify-between px-5 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5"><Mark size={26} /><span className="font-stencil text-xl tracking-[0.12em]">FHERUM</span></Link>
           <nav className="hidden md:flex gap-8 font-mono text-[12px] uppercase [&>a]:opacity-75 [&>a:hover]:opacity-100 [&>a:hover]:text-[#ff5a1f]">
-            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#assay">Assay</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
+            <a href="#problem">Problem</a><a href="#veil">Veilbook</a><a href="#risk">Ironclad</a><a href="#assay">Assay</a><a href="#headless">Build</a><a href="#stack">Stack</a><a href="#contracts">Contracts</a>
           </nav>
           <div className="flex items-center gap-3"><XLink className="h-9 w-9 justify-center border border-[#e9e4d8]/30 hover:text-[#ff5a1f] hover:border-[#ff5a1f]" /><NetToggle className="hidden sm:inline-flex" /><Link href="/app" className="font-mono text-[12px] uppercase border border-[#e9e4d8] px-4 h-9 inline-flex items-center hover:bg-[#ff5a1f] hover:border-[#ff5a1f] hover:text-black">{live ? "Launch app" : "Preview app"} →</Link></div>
         </div>
@@ -42,7 +42,7 @@ export default function Landing() {
         </div>
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-24 pointer-events-none bg-gradient-to-b from-transparent to-bg" />
         <div className="relative h-full md:mx-[14%] px-5 md:px-10 flex flex-col">
-          <div className="pt-8 text-center"><a href="#assay" className="group mb-3 inline-flex items-center gap-2 border border-bronze/60 bg-bg/80 px-2.5 py-1 font-mono text-[11px] uppercase text-ink hover:border-bronze hover:text-bronze"><span className="bg-bronze text-black px-1.5">New</span>ASSAY live on mainnet<span className="transition-transform group-hover:translate-x-0.5">→</span></a><br /><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span><div className="mt-3 flex justify-center"><CaChip /></div></div>
+          <div className="pt-8 text-center"><a href="#headless" className="group mb-3 inline-flex items-center gap-2 border border-bronze/60 bg-bg/80 px-2.5 py-1 font-mono text-[11px] uppercase text-ink hover:border-bronze hover:text-bronze"><span className="bg-bronze text-black px-1.5">New</span>Headless Lending live on mainnet<span className="transition-transform group-hover:translate-x-0.5">→</span></a><br /><span className="inline-block bg-bronze text-black font-mono text-xs uppercase px-2 py-0.5">FHE-ready money markets · Robinhood Chain</span><div className="mt-3 flex justify-center"><CaChip /></div></div>
           <h1 className="mt-auto font-stencil uppercase text-ink leading-[0.86] tracking-[-0.005em] text-[clamp(44px,6.4vw,112px)]">
             <span className="block"><span className="text-bronze">Private</span> positions, by design.</span>
             <span className="block md:text-right text-ink/40"><span className="text-bronze">Public</span> market accountability.</span>
@@ -61,7 +61,7 @@ export default function Landing() {
       </section>
 
       <div style={{ background: MOLTEN, color: INK }}>
-        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · risk-curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay", "ASSAY · dividend & split-aware stock collateral"]} />
+        <Marquee items={["VEILBOOK · FHE-ready positions", "IRONCLAD · fail-closed solvency checks", "FORGEHUB · risk-curated hub & spoke", "STEEL LENS · public aggregates", "IRON GATE · optional eligibility", "BREAKGLASS · pause never blocks repay", "ASSAY · dividend & split-aware stock collateral", "HEADLESS · lending engine for any app"]} />
       </div>
 
       {/* PROBLEM — deep steel field with glyph rain + scroll-stacked cards */}
@@ -147,11 +147,44 @@ export default function Landing() {
         <p className="mt-8 max-w-3xl font-mono text-[10px] leading-relaxed text-[#e9e4d8]/40">Figures are past onchain records, not projections. Dividends are reinvested into the token&apos;s uiMultiplier, not paid in cash. Not investment advice. Not affiliated with Robinhood.</p>
       </section>
 
+      {/* HEADLESS — lending engine without the frontend */}
+      <section id="headless" className="relative bg-[#0b0806] px-5 md:px-8 py-28 border-t-2 border-[#ff5a1f]">
+        <div className="grid lg:grid-cols-2 gap-10 items-end">
+          <div>
+            <p className="font-mono text-xs uppercase text-[#ff5a1f]">§05 — Headless Lending · New on mainnet</p>
+            <h2 className="mt-4 font-stencil text-5xl md:text-7xl uppercase leading-[0.9] text-[#e9e4d8]">Your app.<br />Our lending engine.</h2>
+          </div>
+          <p className="max-w-xl text-[15px] leading-relaxed text-[#e9e4d8]/75">FHERUM is the lending engine, without the frontend. Wallets, trading apps, vaults and AI agents put lending inside their own product while FHERUM markets handle rates, risk, oracles, liquidation and settlement on Robinhood Chain. Headless architecture, inspired by ATLAS.</p>
+        </div>
+        <ol className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 border-2 border-[#e9e4d8]/80">
+          {[
+            ["01 · Widget", "One iframe tag. A branded earn or borrow box on any site, signed in the visitor's own wallet."],
+            ["02 · SDK", "@fherum/headless reads every market and builds supply, borrow and repay transactions. viem only."],
+            ["03 · Agents", "HEARTH Hooks vaults let an AI agent lend under on-chain rules the owner sets."],
+            ["04 · Open", "No API key, no allowlist. FHERUM never holds keys; users sign every action."],
+          ].map(([t, d], i) => (
+            <li key={t} className={`p-5 grid gap-2 content-start border-[#e9e4d8]/25 ${i ? "lg:border-l" : ""} ${i % 2 ? "sm:border-l" : ""} ${i > 0 ? "max-sm:border-t" : ""} ${i > 1 ? "sm:max-lg:border-t" : ""}`}>
+              <span className="font-mono text-xs uppercase text-[#ff5a1f]">{t}</span>
+              <span className="text-sm text-[#e9e4d8]/75">{d}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-6">
+          <a href="https://robinhoodchain.blockscout.com/tx/0x761c9e13439c4eeb4708dbbfe7b8b0fcfd7b7f695ecccbc12ff688046e47350b" target="_blank" rel="noreferrer" className="group font-mono text-[11px] uppercase text-[#e9e4d8]/70 hover:text-[#ff5a1f]">
+            <span className="text-[#ff5a1f]">◆</span> Real supply through the embed widget · <span className="underline underline-offset-4">0x761c…350b</span> ↗
+          </a>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/app/build/docs" className="h-12 px-5 inline-flex items-center border-2 border-[#e9e4d8] text-[#e9e4d8] font-mono text-xs uppercase hover:border-[#ff5a1f] hover:text-[#ff5a1f]">Read the docs</Link>
+            <Link href="/app/build" className="h-12 px-5 inline-flex items-center bg-[#ff5a1f] text-black font-mono text-xs uppercase hover:brightness-110 shadow-[6px_6px_0_#e9e4d8]">Build on FHERUM →</Link>
+          </div>
+        </div>
+      </section>
+
       {/* STACK — paper, stamped iron tags */}
       <section id="stack" style={{ background: PAPER, color: INK }} className="px-5 md:px-8 py-28">
         <div className="flex flex-wrap items-end justify-between gap-6 mb-14">
           <div>
-            <p className="font-mono text-xs uppercase">§05 — The stack</p>
+            <p className="font-mono text-xs uppercase">§06 — The stack</p>
             <h2 className="font-stencil uppercase text-6xl md:text-9xl leading-[0.82] mt-4">Seven modules.<br />One forge.</h2>
           </div>
           <p className="max-w-xs font-mono text-xs uppercase leading-relaxed">Status is what exists in this repository — not a roadmap. Click a tag to read it.</p>
@@ -162,7 +195,7 @@ export default function Landing() {
       
 
       <section id="contracts" className="bg-[#0b0806] text-[#e9e4d8] px-5 md:px-8 py-28 border-t-2 border-[#e9e4d8]/20">
-        <p className="font-mono text-xs uppercase text-[#ff5a1f]">§06 — Contracts</p>
+        <p className="font-mono text-xs uppercase text-[#ff5a1f]">§07 — Contracts</p>
         <h2 className="mt-4 font-stencil uppercase text-6xl md:text-8xl leading-[0.85]">Verify, don&apos;t trust.</h2>
         <p className="mt-4 max-w-2xl text-sm text-[#e9e4d8]/70 leading-relaxed">Every contract this app talks to, per network. Switch networks and the list follows; each address links straight to the block explorer.</p>
         <div className="mt-10"><ContractList /></div>

@@ -154,7 +154,7 @@ export default function Landing() {
             <p className="font-mono text-xs uppercase text-[#ff5a1f]">§05 — Headless Lending · New on mainnet</p>
             <h2 className="mt-4 font-stencil text-5xl md:text-7xl uppercase leading-[0.9] text-[#e9e4d8]">Your app.<br />Our lending engine.</h2>
           </div>
-          <p className="max-w-xl text-[15px] leading-relaxed text-[#e9e4d8]/75">FHERUM is the lending engine, without the frontend. Wallets, trading apps, vaults and AI agents put lending inside their own product while FHERUM markets handle rates, risk, oracles, liquidation and settlement on Robinhood Chain. Headless architecture, inspired by ATLAS.</p>
+          <p className="max-w-xl text-[15px] leading-relaxed text-[#e9e4d8]/75">FHERUM is the lending engine, without the frontend. Wallets, trading apps, vaults and AI agents put lending inside their own product while FHERUM markets handle rates, risk, oracles, liquidation and settlement on Robinhood Chain. Based on the headless lending architecture pioneered by ATLAS from LayerZero.</p>
         </div>
         <ol className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 border-2 border-[#e9e4d8]/80">
           {[

@@ -64,7 +64,7 @@ console.log("supply APY", Number(s.supplyRatePerYearWad) / 1e16, "%");`;
       <PageHead eyebrow="Headless Lending · builder console" title="Build on FHERUM"
         aside={<Tag tone="bronze">Robinhood Chain · 4663</Tag>}>
         FHERUM is the lending engine, without the frontend. Apps build their own lending experience on FHERUM&apos;s markets,
-        risk and settlement instead of building a lending protocol from scratch. Headless architecture, inspired by ATLAS.
+        risk and settlement instead of building a lending protocol from scratch. Based on the headless lending architecture pioneered by ATLAS from LayerZero.
       </PageHead>
 
       <div className="grid gap-4">
@@ -123,7 +123,7 @@ console.log("supply APY", Number(s.supplyRatePerYearWad) / 1e16, "%");`;
           </p>
         </Panel>
 
-        <Panel title="Embed · drop-in widget" aside={<span className="font-mono text-[11px] text-mute">real tx · user's own wallet</span>}>
+        <Panel title="Embed · drop-in widget" aside={<span className="font-mono text-[11px] text-mute">real tx · user&apos;s own wallet</span>}>
           <div className="grid lg:grid-cols-[1fr_380px]">
             <div className="p-5 grid gap-3 content-start">
               <div className="flex items-center justify-between gap-3">

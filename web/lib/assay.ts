@@ -1,6 +1,7 @@
 import "server-only";
 import { createPublicClient, http, isAddress, parseAbi, type Address } from "viem";
 import { CHAINS, type NetKey } from "@/lib/protocol";
+import { readClient } from "@/lib/rpc";
 
 // ASSAY registry (src/AssayRegistry.sol): classifies ERC-8056 multiplier changes of stock collateral.
 // Server-only: MAINNET_RPC_URL may hold a provider key. Every figure here is a direct contract read.
@@ -68,7 +69,7 @@ async function txAt(net: NetKey, registry: Address, asset: Address, ts: number):
   const key = `${net}:${asset.toLowerCase()}:${ts}`;
   if (txCache.has(key)) return txCache.get(key)!;
   try {
-    const c = client(RPC[net]);
+    const c = readClient(net);
     let lo = ASSAY_FROM_BLOCK[net], hi = await c.getBlockNumber();
     while (lo < hi) {
       const mid = (lo + hi) / BigInt(2);
@@ -95,7 +96,7 @@ export async function readAssay(asset: Address, net: NetKey): Promise<AssayView 
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.v;
 
-  const c = client(RPC[net]);
+  const c = readClient(net);
   const read = <T,>(functionName: string, args: unknown[]) =>
     c.readContract({ address: registry, abi, functionName, args } as never) as Promise<T>;
   if (!(await read<boolean>("isRegistered", [asset]))) {

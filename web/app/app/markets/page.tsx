@@ -141,7 +141,7 @@ const cap = (v: bigint, d: number, sym: string) => (v === BigInt(0) ? "No cap" :
 
 async function Card({ address, r, net, v }: { address: `0x${string}`; r: Read; net: Net; v: View }) {
   const href = `/app/markets/${address}`;
-  if (!r.ok) return <Link href={href} className="block border border-line bg-s1 p-4 font-mono text-xs text-bad hover:underline">{short(address)} · read failed</Link>;
+  if (!r.ok) return <Link href={href} title={r.error} className="block border border-line bg-s1 p-4 font-mono text-xs text-bad hover:underline">{short(address)} · read failed</Link>;
   const { m } = r;
   const s = m.snap;
   const L = m.loan;

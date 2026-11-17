@@ -1,6 +1,7 @@
 import "server-only";
-import { createPublicClient, http, parseAbi, type Address } from "viem";
+import { createPublicClient, parseAbi, type Address } from "viem";
 import { CHAINS, NET_CONFIG, type NetKey } from "@/lib/protocol";
+import { rpcTransport } from "@/lib/rpc";
 
 // Real on-chain history: LensReader.snapshot(market) read at past blocks (archive RPC). No synthetic points.
 const RPC: Record<NetKey, string> = {
@@ -9,7 +10,7 @@ const RPC: Record<NetKey, string> = {
 };
 const clients: Partial<Record<NetKey, ReturnType<typeof createPublicClient>>> = {};
 const clientFor = (net: NetKey) =>
-  (clients[net] ??= createPublicClient({ transport: http(RPC[net], { timeout: 10_000, retryCount: 1 }) }));
+  (clients[net] ??= createPublicClient({ transport: rpcTransport(RPC[net], net) }));
 
 const lensAbi = parseAbi([
   "struct S { uint256 totalSupplyAssets; uint256 totalDebtAssets; uint256 totalSupplyShares; uint256 totalBorrowShares; uint256 totalCollateral; uint256 availableLiquidity; uint256 utilizationWad; uint256 borrowRatePerYearWad; uint256 supplyRatePerYearWad; uint256 supplyCap; uint256 borrowCap; uint256 walletSupplyCap; uint256 walletBorrowCap; uint256 ltvWad; uint256 liquidationThresholdWad; uint256 liquidationBonusWad; uint256 closeFactorWad; uint256 reserveFactorWad; uint256 dustValueWad; uint256 supplyIndex; uint256 borrowIndex; bool paused; bool borrowPaused; bool removeCollateralPaused; bool liquidationPaused; bool repayPaused; uint8 privacyMode; address eligibility; }",

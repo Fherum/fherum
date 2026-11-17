@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { CHAINS, type NetKey } from "@/lib/protocol";
+import { readClient } from "@/lib/rpc";
 import { DEPLOYMENTS } from "@/lib/deployments";
 
 // Curator console data: real CuratorRegistry events + live timelock state. No synthetic rows.
@@ -11,13 +12,8 @@ const LOGS_RPC: Record<NetKey, string> = {
   testnet: process.env.LOGS_RPC_URL || process.env.RPC_URL || CHAINS.testnet.rpc,
   mainnet: process.env.MAINNET_LOGS_RPC_URL || "https://robinhood.daybreak-rpc.network",
 };
-const READ_RPC: Record<NetKey, string> = {
-  testnet: process.env.RPC_URL || CHAINS.testnet.rpc,
-  mainnet: process.env.MAINNET_RPC_URL || CHAINS.mainnet.rpc,
-};
 const mk = (url: string) => createPublicClient({ transport: http(url, { timeout: 15_000, retryCount: 1 }) });
 const logsC: Partial<Record<NetKey, ReturnType<typeof mk>>> = {};
-const readC: Partial<Record<NetKey, ReturnType<typeof mk>>> = {};
 
 const blockEnv = (v?: string) => (v && /^\d+$/.test(v.trim()) ? BigInt(v.trim()) : null);
 // Registry deploy blocks (broadcast receipts). Scanning earlier is wasted work.
@@ -134,7 +130,7 @@ async function scan(net: NetKey, registry: Address, from: bigint, to: bigint): P
 const mktAbi = parseAbi(["function targetHealthFactorWad() view returns (uint256)"]);
 export async function readTargetHf(net: NetKey, market: Address): Promise<bigint | null> {
   try {
-    return (await (readC[net] ??= mk(READ_RPC[net])).readContract({ address: market, abi: mktAbi, functionName: "targetHealthFactorWad" })) as bigint;
+    return (await readClient(net).readContract({ address: market, abi: mktAbi, functionName: "targetHealthFactorWad" })) as bigint;
   } catch { return null; }
 }
 
@@ -169,7 +165,7 @@ export async function readCurator(net: NetKey): Promise<CuratorData | null> {
 async function compute(net: NetKey): Promise<CuratorData | null> {
   const registry = registryFor(net);
   if (!registry) return null;
-  const rc = (readC[net] ??= mk(READ_RPC[net]));
+  const rc = readClient(net);
   try {
     const timelock = (await rc.readContract({ address: registry, abi: regAbi, functionName: "timelock" })) as Address;
     const minDelay = Number(await rc.readContract({ address: timelock, abi: tlAbi, functionName: "getMinDelay" }));

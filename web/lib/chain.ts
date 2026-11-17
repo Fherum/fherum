@@ -1,15 +1,9 @@
 import "server-only";
-import { createPublicClient, http, isAddress, parseAbi, type Address } from "viem";
-import { CHAINS, NET_CONFIG, type NetKey } from "@/lib/protocol";
+import { isAddress, parseAbi, type Address } from "viem";
+import { NET_CONFIG, type NetKey } from "@/lib/protocol";
+import { readClient } from "@/lib/rpc";
 
-// Server-only reads. RPC_URL / MAINNET_RPC_URL may contain a provider key (Alchemy), so they are never NEXT_PUBLIC.
-const RPC: Record<NetKey, string> = {
-  testnet: process.env.RPC_URL || CHAINS.testnet.rpc,
-  mainnet: process.env.MAINNET_RPC_URL || CHAINS.mainnet.rpc,
-};
-const clients: Partial<Record<NetKey, ReturnType<typeof createPublicClient>>> = {};
-const clientFor = (net: NetKey) =>
-  (clients[net] ??= createPublicClient({ transport: http(RPC[net], { timeout: 10_000, retryCount: 1 }) }));
+const clientFor = readClient;
 
 const lensAbi = parseAbi([
   "struct MarketSnapshot { uint256 totalSupplyAssets; uint256 totalDebtAssets; uint256 totalSupplyShares; uint256 totalBorrowShares; uint256 totalCollateral; uint256 availableLiquidity; uint256 utilizationWad; uint256 borrowRatePerYearWad; uint256 supplyRatePerYearWad; uint256 supplyCap; uint256 borrowCap; uint256 walletSupplyCap; uint256 walletBorrowCap; uint256 ltvWad; uint256 liquidationThresholdWad; uint256 liquidationBonusWad; uint256 closeFactorWad; uint256 reserveFactorWad; uint256 dustValueWad; uint256 supplyIndex; uint256 borrowIndex; bool paused; bool borrowPaused; bool removeCollateralPaused; bool liquidationPaused; bool repayPaused; uint8 privacyMode; address eligibility; }",
@@ -49,7 +43,7 @@ export const marketsFor = (net: NetKey): Address[] => NET_CONFIG[net].markets.fi
 /** Testnet list (back-compat). */
 export const MARKETS: Address[] = marketsFor("testnet");
 
-async function token(client: ReturnType<typeof createPublicClient>, address: Address): Promise<Token> {
+async function token(client: ReturnType<typeof readClient>, address: Address): Promise<Token> {
   const [symbol, decimals] = await Promise.all([
     client.readContract({ address, abi: erc20Abi, functionName: "symbol" }),
     client.readContract({ address, abi: erc20Abi, functionName: "decimals" }),
@@ -73,13 +67,27 @@ export async function readMarket(market: Address, net: NetKey = "testnet"): Prom
 }
 
 /** Returns the market or an error message — never throws into the page. */
-export async function tryReadMarket(market: Address, net: NetKey = "testnet"): Promise<{ ok: true; m: MarketView } | { ok: false; error: string }> {
+type TryRead = { ok: true; m: MarketView } | { ok: false; error: string };
+
+export async function tryReadMarket(market: Address, net: NetKey = "testnet"): Promise<TryRead> {
   try {
     return { ok: true, m: await readMarket(market, net) };
   } catch (e) {
-    const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
-    return { ok: false, error: msg.slice(0, 160) };
+    return { ok: false, error: describeRpcError(e) };
   }
+}
+
+/** One-line error with HTTP status / network cause, so a bad RPC env is diagnosable. URLs are stripped (they may hold a provider key). */
+function describeRpcError(e: unknown): string {
+  const parts: string[] = [];
+  for (let x: unknown = e, i = 0; x && i < 5; x = (x as { cause?: unknown }).cause, i++) {
+    const o = x as { shortMessage?: string; message?: string; status?: number; code?: string | number };
+    const line = (o.shortMessage ?? o.message ?? String(x)).split("\n")[0];
+    if (o.status) parts.push(`status ${o.status}`);
+    if (typeof o.code === "string") parts.push(o.code);
+    if (line && !parts.includes(line)) parts.push(line);
+  }
+  return parts.join(" · ").replace(/https?:\/\/\S+/g, "<rpc>").slice(0, 200);
 }
 
 // ---- formatting (WAD = 1e18) ----

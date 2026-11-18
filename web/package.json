@@ -11,6 +11,8 @@
   "dependencies": {
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
+    "@sentora/vaults-morpho": "^1.0.0",
+    "@sentora/vaults-plan": "^1.0.0",
     "motion": "^14.7.1",
     "next": "16.4.3",
     "react": "19.3.0",

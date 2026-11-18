@@ -6,6 +6,8 @@ import { getNet } from "@/lib/net-server";
 import { marketsFor, tryReadMarket } from "@/lib/chain";
 import { readCurator, readTargetHf, SELECTOR_LABEL } from "@/lib/curator";
 import { DEPLOYMENTS } from "@/lib/deployments";
+import { readSentoraVaults } from "@/lib/sentora";
+import { SentoraAction } from "@/components/sentora-action";
 import { CuratorConsole, type CuratedMarket } from "@/components/curator-console";
 
 export default function Curator() {
@@ -31,6 +33,7 @@ export default function Curator() {
           </ul>
         </Panel>
         <Suspense fallback={<Panel title="Curator console"><p className="px-6 py-10 text-mute text-xs">Reading registry and timelock from chain…</p></Panel>}><Live /></Suspense>
+        <Suspense fallback={<Panel title="Curator benchmark · Sentora"><p className="px-6 py-10 text-mute text-xs">Reading Sentora-curated vaults…</p></Panel>}><SentoraBenchmark /></Suspense>
         <Panel title="Permission matrix">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
@@ -60,6 +63,41 @@ export default function Curator() {
         </Panel>
       </div>
     </>
+  );
+}
+
+const usd = (n: number) => (n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${(n / 1e3).toFixed(0)}K`);
+
+async function SentoraBenchmark() {
+  const vaults = await readSentoraVaults();
+  return (
+    <Panel title="Curator benchmark · Sentora">
+      <p className="px-6 pt-5 text-sm text-ink-2">
+        Live reference data from vaults curated by Sentora on Morpho, read from the public Morpho API. FHERUM benchmarks its curator caps and rates against institutional curation. Deposits on Ethereum are experimental, signed by your wallet and go straight into the Sentora-curated vault. Not an endorsement or partnership.
+      </p>
+      {!vaults || vaults.length === 0 ? (
+        <Empty title="Sentora data unavailable.">The Morpho API did not answer. Nothing is shown rather than guessed.</Empty>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm mt-3">
+            <thead className="border-b border-line"><tr><Th>Vault</Th><Th>Chain</Th><Th>Asset</Th><Th>TVL</Th><Th>Net APY</Th><Th>{""}</Th></tr></thead>
+            <tbody>
+              {vaults.map((v) => (
+                <tr key={`${v.chainId}-${v.address}`} className="border-b border-line last:border-0">
+                  <td className="px-4 py-3 text-ink">{v.chainId === 1 ? <a className="hover:text-bronze" href={`https://etherscan.io/address/${v.address}`} target="_blank" rel="noreferrer">{v.name} ↗</a> : v.name}</td>
+                  <td className="px-4 py-3 text-mute text-xs">{v.network}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{v.asset}</td>
+                  <td className="px-4 py-3 font-mono">{usd(v.tvlUsd)}</td>
+                  <td className="px-4 py-3 font-mono text-ok">{(v.apy * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-3">{v.chainId === 1 ? <SentoraAction vault={v.address as `0x${string}`} name={v.name} asset={v.asset} /> : <span className="text-mute text-xs">view only</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="px-6 py-3 text-mute text-xs border-t border-line">Source: api.morpho.org · curator 0x9e39…aac0 · refreshed every 10 min · <a className="hover:text-bronze" href="https://vaults.sentora.com" target="_blank" rel="noreferrer">vaults.sentora.com ↗</a></p>
+    </Panel>
   );
 }
 
